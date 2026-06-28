@@ -18,6 +18,12 @@ model User {
   roles       UserRole[]
   reviews     ApplicationReview[]
   stores      Store?    @relation("SellerStore")
+
+  wallet      Wallet?   @relation("BuyerWallet")
+  addresses   DeliveryAddress[] @relation("BuyerAddresses")
+  cart        Cart?     @relation("BuyerCart")
+  buyerOrders Order[]   @relation("BuyerOrders")
+  sellerOrders Order[]  @relation("SellerOrders")
 }
 
 model UserRole {
@@ -52,6 +58,8 @@ model Store {
 
   seller      User      @relation("SellerStore", fields: [sellerId], references: [id])
   products    Product[]
+  cart        Cart[]
+  orders      Order[]
 }
 
 model Product {
@@ -67,4 +75,106 @@ model Product {
   updatedAt   DateTime  @updatedAt
 
   store       Store     @relation(fields: [storeId], references: [id])
+  cartItems   CartItem[]
+  orderItems  OrderItem[]
+}
+
+model Wallet {
+  id           String             @id @default(cuid())
+  buyerId      String             @unique
+  balance      Float              @default(0)
+  buyer        User               @relation("BuyerWallet", fields: [buyerId], references: [id])
+  transactions WalletTransaction[]
+}
+
+model WalletTransaction {
+  id          String          @id @default(cuid())
+  walletId    String
+  type        String // TOPUP, PAYMENT, REFUND, INCOME, INCOME_REVERSAL
+  amount      Float
+  description String
+  orderId     String?
+  createdAt   DateTime        @default(now())
+  wallet      Wallet          @relation(fields: [walletId], references: [id])
+}
+
+model DeliveryAddress {
+  id            String  @id @default(cuid())
+  buyerId       String
+  label         String
+  recipientName String
+  phone         String
+  addressLine   String
+  city          String
+  province      String
+  postalCode    String
+  isDefault     Boolean @default(false)
+  createdAt     DateTime @default(now())
+  buyer         User    @relation("BuyerAddresses", fields: [buyerId], references: [id])
+  orders        Order[]
+}
+
+model Cart {
+  id       String     @id @default(cuid())
+  buyerId  String     @unique
+  storeId  String?
+  buyer    User       @relation("BuyerCart", fields: [buyerId], references: [id])
+  store    Store?     @relation(fields: [storeId], references: [id])
+  items    CartItem[]
+}
+
+model CartItem {
+  id        String  @id @default(cuid())
+  cartId    String
+  productId String
+  quantity  Int
+  cart      Cart    @relation(fields: [cartId], references: [id], onDelete: Cascade)
+  product   Product @relation(fields: [productId], references: [id])
+  @@unique([cartId, productId])
+}
+
+model Order {
+  id                String          @id @default(cuid())
+  buyerId           String
+  sellerId          String
+  storeId           String
+  deliveryMethod    String // INSTANT, NEXT_DAY, REGULAR
+  deliveryAddressId String
+  subtotal          Float
+  discountAmount    Float           @default(0)
+  deliveryFee       Float
+  taxAmount         Float
+  totalAmount       Float
+  status            String          @default("SEDANG_DIKEMAS") // SEDANG_DIKEMAS, MENUNGGU_PENGIRIM, SEDANG_DIKIRIM, PESANAN_SELESAI, DIKEMBALIKAN
+  voucherId         String?
+  promoId           String?
+  createdAt         DateTime        @default(now())
+  updatedAt         DateTime        @updatedAt
+
+  buyer             User            @relation("BuyerOrders", fields: [buyerId], references: [id])
+  seller            User            @relation("SellerOrders", fields: [sellerId], references: [id])
+  store             Store           @relation(fields: [storeId], references: [id])
+  deliveryAddress   DeliveryAddress @relation(fields: [deliveryAddressId], references: [id])
+  items             OrderItem[]
+  statusHistory     OrderStatusHistory[]
+}
+
+model OrderItem {
+  id          String  @id @default(cuid())
+  orderId     String
+  productId   String
+  productName String
+  price       Float
+  quantity    Int
+  order       Order   @relation(fields: [orderId], references: [id])
+  product     Product @relation(fields: [productId], references: [id])
+}
+
+model OrderStatusHistory {
+  id        String      @id @default(cuid())
+  orderId   String
+  status    String
+  note      String?
+  createdAt DateTime    @default(now())
+  order     Order       @relation(fields: [orderId], references: [id])
 }

@@ -6,6 +6,7 @@ import { useEffect, useState } from "react";
 import { ArrowLeft, ShoppingCart, Store } from "lucide-react";
 import { Button, buttonVariants } from "@/components/ui/button";
 import { Card, CardContent } from "@/components/ui/card";
+import { Dialog, DialogContent, DialogHeader, DialogTitle, DialogDescription, DialogFooter } from "@/components/ui/dialog";
 import { toast } from "sonner";
 import { getUser, isLoggedIn } from "@/lib/auth";
 import api from "@/lib/api";
@@ -17,6 +18,7 @@ export default function ProductDetailPage() {
   const [product, setProduct] = useState<any>(null);
   const [loading, setLoading] = useState(true);
   const [user, setUser] = useState<any>(null);
+  const [isConflictOpen, setIsConflictOpen] = useState(false);
 
   useEffect(() => {
     setUser(isLoggedIn() ? getUser() : null);
@@ -34,8 +36,28 @@ export default function ProductDetailPage() {
     }
   };
 
-  const handleAddToCart = () => {
-    toast.success(`${product?.name} ditambahkan ke keranjang!`);
+  const handleAddToCart = async () => {
+    try {
+      await api.post("/buyer/cart/items", { productId: product.id, quantity: 1 });
+      toast.success(`${product.name} ditambahkan ke keranjang!`);
+    } catch (err: any) {
+      if (err.response?.status === 409) {
+        setIsConflictOpen(true);
+      } else {
+        toast.error(err.response?.data?.error || "Gagal menambahkan produk ke keranjang.");
+      }
+    }
+  };
+
+  const handleClearAndAdd = async () => {
+    try {
+      await api.delete("/buyer/cart");
+      await api.post("/buyer/cart/items", { productId: product.id, quantity: 1 });
+      toast.success(`${product.name} ditambahkan ke keranjang baru!`);
+      setIsConflictOpen(false);
+    } catch (err) {
+      toast.error("Gagal mengosongkan keranjang.");
+    }
   };
 
   if (loading) {
@@ -145,6 +167,26 @@ export default function ProductDetailPage() {
           </Card>
         </div>
       </div>
+
+      {/* Conflict Dialog */}
+      <Dialog open={isConflictOpen} onOpenChange={setIsConflictOpen}>
+        <DialogContent className="max-w-md bg-white rounded-2xl">
+          <DialogHeader>
+            <DialogTitle className="text-lg font-bold">Ganti Keranjang Belanja?</DialogTitle>
+            <DialogDescription className="font-light">
+              Keranjang belanja Anda sudah berisi barang dari toko lain. Untuk menambahkan produk ini, keranjang saat ini harus dikosongkan. Apakah Anda bersedia mengosongkannya?
+            </DialogDescription>
+          </DialogHeader>
+          <DialogFooter className="gap-2 sm:gap-0 pt-4 border-t border-zinc-100">
+            <Button variant="outline" onClick={() => setIsConflictOpen(false)} className="rounded-lg">
+              Batal
+            </Button>
+            <Button onClick={handleClearAndAdd} className="bg-zinc-950 hover:bg-zinc-800 text-white rounded-lg">
+              Ya, Kosongkan & Tambah
+            </Button>
+          </DialogFooter>
+        </DialogContent>
+      </Dialog>
     </div>
   );
 }

@@ -62,7 +62,45 @@ async function main() {
     });
   }
 
-  console.log('✅ Seed complete: admin@seapedia.com / Admin123!, seller1@seapedia.com / Seller123!');
+  // 5. Seed Buyer
+  const buyerPassword = await bcrypt.hash('Buyer123!', 12);
+  const buyer = await prisma.user.upsert({
+    where: { email: 'buyer1@seapedia.com' },
+    update: {},
+    create: {
+      username: 'buyer1',
+      email: 'buyer1@seapedia.com',
+      password: buyerPassword,
+      roles: { create: [{ role: 'BUYER' }] },
+    },
+  });
+
+  // 6. Seed Wallet
+  await prisma.wallet.upsert({
+    where: { buyerId: buyer.id },
+    update: {},
+    create: {
+      buyerId: buyer.id,
+      balance: 50000000, // Rp 50.000.000 for checkout testing
+    },
+  });
+
+  // 7. Seed Delivery Address
+  await prisma.deliveryAddress.create({
+    data: {
+      buyerId: buyer.id,
+      label: 'Rumah',
+      recipientName: 'Budi Utomo',
+      phone: '081234567890',
+      addressLine: 'Jl. Merdeka No. 10',
+      city: 'Jakarta Pusat',
+      province: 'DKI Jakarta',
+      postalCode: '10110',
+      isDefault: true,
+    },
+  });
+
+  console.log('✅ Seed complete: admin@seapedia.com / Admin123!, seller1@seapedia.com / Seller123!, buyer1@seapedia.com / Buyer123!');
 }
 
 main().catch(console.error).finally(() => prisma.$disconnect());
