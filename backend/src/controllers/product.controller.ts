@@ -1,6 +1,7 @@
 import { Request, Response } from 'express';
 import { z } from 'zod';
 import { prisma } from '../utils/prisma';
+import { sanitize } from '../middlewares/sanitize.middleware';
 
 const productSchema = z.object({
   name: z.string().min(1, 'Nama produk wajib diisi').max(100, 'Nama produk maksimal 100 karakter'),
@@ -15,6 +16,9 @@ export const createProduct = async (req: Request, res: Response) => {
   if (!parsed.success) return res.status(400).json({ error: parsed.error.flatten() });
   const { name, description, price, stock, imageUrl } = parsed.data;
 
+  const sanitizedName = sanitize(name);
+  const sanitizedDescription = sanitize(description);
+
   // Find seller's store
   const store = await prisma.store.findUnique({ where: { sellerId: req.user!.userId } });
   if (!store) {
@@ -23,8 +27,8 @@ export const createProduct = async (req: Request, res: Response) => {
 
   const product = await prisma.product.create({
     data: {
-      name,
-      description,
+      name: sanitizedName,
+      description: sanitizedDescription,
       price,
       stock,
       imageUrl: imageUrl || null,
@@ -55,6 +59,9 @@ export const updateProduct = async (req: Request, res: Response) => {
   if (!parsed.success) return res.status(400).json({ error: parsed.error.flatten() });
   const { name, description, price, stock, imageUrl } = parsed.data;
 
+  const sanitizedName = sanitize(name);
+  const sanitizedDescription = sanitize(description);
+
   const product = await prisma.product.findUnique({
     where: { id },
     include: { store: true },
@@ -71,8 +78,8 @@ export const updateProduct = async (req: Request, res: Response) => {
   const updated = await prisma.product.update({
     where: { id },
     data: {
-      name,
-      description,
+      name: sanitizedName,
+      description: sanitizedDescription,
       price,
       stock,
       imageUrl: imageUrl || null,

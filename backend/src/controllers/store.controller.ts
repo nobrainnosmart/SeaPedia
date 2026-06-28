@@ -1,6 +1,7 @@
 import { Request, Response } from 'express';
 import { z } from 'zod';
 import { prisma } from '../utils/prisma';
+import { sanitize } from '../middlewares/sanitize.middleware';
 
 const storeSchema = z.object({
   name: z.string().min(1, 'Nama toko wajib diisi').max(100, 'Nama toko maksimal 100 karakter'),
@@ -12,8 +13,11 @@ export const createStore = async (req: Request, res: Response) => {
   if (!parsed.success) return res.status(400).json({ error: parsed.error.flatten() });
   const { name, description } = parsed.data;
 
+  const sanitizedName = sanitize(name);
+  const sanitizedDescription = description ? sanitize(description) : undefined;
+
   // Check unique name
-  const existingName = await prisma.store.findUnique({ where: { name } });
+  const existingName = await prisma.store.findUnique({ where: { name: sanitizedName } });
   if (existingName) {
     return res.status(409).json({ error: 'Nama toko sudah digunakan' });
   }
@@ -26,8 +30,8 @@ export const createStore = async (req: Request, res: Response) => {
 
   const store = await prisma.store.create({
     data: {
-      name,
-      description,
+      name: sanitizedName,
+      description: sanitizedDescription,
       sellerId: req.user!.userId,
     },
   });
@@ -57,6 +61,9 @@ export const updateStore = async (req: Request, res: Response) => {
   if (!parsed.success) return res.status(400).json({ error: parsed.error.flatten() });
   const { name, description } = parsed.data;
 
+  const sanitizedName = sanitize(name);
+  const sanitizedDescription = description ? sanitize(description) : undefined;
+
   const ownStore = await prisma.store.findUnique({ where: { sellerId: req.user!.userId } });
   if (!ownStore) {
     return res.status(404).json({ error: 'Toko tidak ditemukan' });
@@ -65,7 +72,7 @@ export const updateStore = async (req: Request, res: Response) => {
   // Check unique name (excluding own store)
   const existingName = await prisma.store.findFirst({
     where: {
-      name,
+      name: sanitizedName,
       id: { not: ownStore.id },
     },
   });
@@ -75,7 +82,7 @@ export const updateStore = async (req: Request, res: Response) => {
 
   const updated = await prisma.store.update({
     where: { id: ownStore.id },
-    data: { name, description },
+    data: { name: sanitizedName, description: sanitizedDescription },
   });
 
   res.json(updated);

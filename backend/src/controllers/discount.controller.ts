@@ -1,6 +1,7 @@
 import { Request, Response } from 'express';
 import { z } from 'zod';
 import { prisma } from '../utils/prisma';
+import { sanitize } from '../middlewares/sanitize.middleware';
 
 const voucherSchema = z.object({
   code: z.string().min(1, 'Kode voucher wajib diisi').max(20).toUpperCase(),
@@ -9,6 +10,14 @@ const voucherSchema = z.object({
   minPurchase: z.number().nonnegative('Minimal pembelian tidak boleh negatif'),
   maxDiscount: z.number().positive().optional().nullable(),
   limitCount: z.number().int().positive('Batas penggunaan harus berupa angka positif'),
+}).refine((data) => {
+  if (data.discountType === 'PERCENT') {
+    return data.discountValue <= 100;
+  }
+  return data.discountValue <= 1000000;
+}, {
+  message: 'Diskon persen maksimal 100%, diskon tetap maksimal Rp 1.000.000',
+  path: ['discountValue'],
 });
 
 const promoSchema = z.object({
@@ -18,6 +27,14 @@ const promoSchema = z.object({
   minPurchase: z.number().nonnegative('Minimal pembelian tidak boleh negatif'),
   maxDiscount: z.number().positive().optional().nullable(),
   limitCount: z.number().int().positive('Batas penggunaan harus berupa angka positif'),
+}).refine((data) => {
+  if (data.discountType === 'PERCENT') {
+    return data.discountValue <= 100;
+  }
+  return data.discountValue <= 1000000;
+}, {
+  message: 'Diskon persen maksimal 100%, diskon tetap maksimal Rp 1.000.000',
+  path: ['discountValue'],
 });
 
 const validateSchema = z.object({
@@ -30,14 +47,16 @@ export const createVoucher = async (req: Request, res: Response) => {
   if (!parsed.success) return res.status(400).json({ error: parsed.error.flatten() });
   const data = parsed.data;
 
+  const sanitizedCode = sanitize(data.code).toUpperCase();
+
   const store = await prisma.store.findUnique({ where: { sellerId: req.user!.userId } });
   if (!store) {
     return res.status(400).json({ error: 'Buat toko terlebih dahulu' });
   }
 
   // Check unique code
-  const existingVoucher = await prisma.voucher.findUnique({ where: { code: data.code } });
-  const existingPromo = await prisma.promo.findUnique({ where: { code: data.code } });
+  const existingVoucher = await prisma.voucher.findUnique({ where: { code: sanitizedCode } });
+  const existingPromo = await prisma.promo.findUnique({ where: { code: sanitizedCode } });
   if (existingVoucher || existingPromo) {
     return res.status(409).json({ error: 'Kode diskon sudah digunakan' });
   }
@@ -45,6 +64,7 @@ export const createVoucher = async (req: Request, res: Response) => {
   const voucher = await prisma.voucher.create({
     data: {
       ...data,
+      code: sanitizedCode,
       storeId: store.id,
       sellerId: req.user!.userId,
     },
@@ -67,15 +87,20 @@ export const createPromo = async (req: Request, res: Response) => {
   if (!parsed.success) return res.status(400).json({ error: parsed.error.flatten() });
   const data = parsed.data;
 
+  const sanitizedCode = sanitize(data.code).toUpperCase();
+
   // Check unique code
-  const existingVoucher = await prisma.voucher.findUnique({ where: { code: data.code } });
-  const existingPromo = await prisma.promo.findUnique({ where: { code: data.code } });
+  const existingVoucher = await prisma.voucher.findUnique({ where: { code: sanitizedCode } });
+  const existingPromo = await prisma.promo.findUnique({ where: { code: sanitizedCode } });
   if (existingVoucher || existingPromo) {
     return res.status(409).json({ error: 'Kode diskon sudah digunakan' });
   }
 
   const promo = await prisma.promo.create({
-    data,
+    data: {
+      ...data,
+      code: sanitizedCode,
+    },
   });
 
   res.status(201).json(promo);
@@ -95,6 +120,8 @@ export const validateDiscount = async (req: Request, res: Response) => {
   if (!parsed.success) return res.status(400).json({ error: parsed.error.flatten() });
   const { code } = parsed.data;
 
+  const sanitizedCode = sanitize(code).toUpperCase();
+
   // Fetch cart
   const cart = await prisma.cart.findUnique({
     where: { buyerId },
@@ -112,7 +139,7 @@ export const validateDiscount = async (req: Request, res: Response) => {
   const subtotal = cart.items.reduce((sum, item) => sum + item.product.price * item.quantity, 0);
 
   // Check Promo first
-  const promo = await prisma.promo.findUnique({ where: { code } });
+  const promo = await prisma.promo.findUnique({ where: { code: sanitizedCode } });
   if (promo) {
     if (promo.usedCount >= promo.limitCount) {
       return res.status(400).json({ error: 'Kuota promo sudah habis' });
@@ -144,7 +171,7 @@ export const validateDiscount = async (req: Request, res: Response) => {
   }
 
   // Check Store Voucher
-  const voucher = await prisma.voucher.findUnique({ where: { code } });
+  const voucher = await prisma.voucher.findUnique({ where: { code: sanitizedCode } });
   if (voucher) {
     if (voucher.storeId !== cart.storeId) {
       return res.status(400).json({ error: 'Voucher tidak berlaku untuk produk di keranjang ini' });

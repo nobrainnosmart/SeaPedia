@@ -1,6 +1,7 @@
 import { Request, Response } from 'express';
 import { z } from 'zod';
 import { prisma } from '../utils/prisma';
+import { sanitize } from '../middlewares/sanitize.middleware';
 
 const addressSchema = z.object({
   label: z.string().min(1, 'Label wajib diisi').max(50),
@@ -28,8 +29,19 @@ export const createAddress = async (req: Request, res: Response) => {
   if (!parsed.success) return res.status(400).json({ error: parsed.error.flatten() });
   const data = parsed.data;
 
+  const sanitizedData = {
+    label: sanitize(data.label),
+    recipientName: sanitize(data.recipientName),
+    phone: sanitize(data.phone),
+    addressLine: sanitize(data.addressLine),
+    city: sanitize(data.city),
+    province: sanitize(data.province),
+    postalCode: sanitize(data.postalCode),
+    isDefault: data.isDefault,
+  };
+
   const address = await prisma.$transaction(async (tx) => {
-    if (data.isDefault) {
+    if (sanitizedData.isDefault) {
       await tx.deliveryAddress.updateMany({
         where: { buyerId },
         data: { isDefault: false },
@@ -38,8 +50,8 @@ export const createAddress = async (req: Request, res: Response) => {
 
     return tx.deliveryAddress.create({
       data: {
-        ...data,
-        isDefault: data.isDefault || false,
+        ...sanitizedData,
+        isDefault: sanitizedData.isDefault || false,
         buyerId,
       },
     });
@@ -55,13 +67,24 @@ export const updateAddress = async (req: Request, res: Response) => {
   if (!parsed.success) return res.status(400).json({ error: parsed.error.flatten() });
   const data = parsed.data;
 
+  const sanitizedData = {
+    label: sanitize(data.label),
+    recipientName: sanitize(data.recipientName),
+    phone: sanitize(data.phone),
+    addressLine: sanitize(data.addressLine),
+    city: sanitize(data.city),
+    province: sanitize(data.province),
+    postalCode: sanitize(data.postalCode),
+    isDefault: data.isDefault,
+  };
+
   const existing = await prisma.deliveryAddress.findUnique({ where: { id } });
   if (!existing || existing.buyerId !== buyerId) {
     return res.status(404).json({ error: 'Alamat tidak ditemukan' });
   }
 
   const updated = await prisma.$transaction(async (tx) => {
-    if (data.isDefault) {
+    if (sanitizedData.isDefault) {
       await tx.deliveryAddress.updateMany({
         where: { buyerId },
         data: { isDefault: false },
@@ -71,8 +94,8 @@ export const updateAddress = async (req: Request, res: Response) => {
     return tx.deliveryAddress.update({
       where: { id },
       data: {
-        ...data,
-        isDefault: data.isDefault || false,
+        ...sanitizedData,
+        isDefault: sanitizedData.isDefault || false,
       },
     });
   });
