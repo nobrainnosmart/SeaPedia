@@ -188,7 +188,7 @@ export default function Home() {
             {/* Buyer Card */}
             <motion.div 
               variants={itemVariants} 
-              whileHover={{ y: -6, shadow: "0 10px 25px -5px rgba(0, 0, 0, 0.05), 0 8px 10px -6px rgba(0, 0, 0, 0.05)" }}
+              whileHover={{ y: -6, boxShadow: "0 10px 25px -5px rgba(0, 0, 0, 0.05), 0 8px 10px -6px rgba(0, 0, 0, 0.05)" }}
               className="flex"
             >
               <Card className="border border-zinc-200 bg-white rounded-3xl shadow-xs flex flex-col justify-between p-6 transition-all duration-300 hover:border-blue-200">
@@ -208,7 +208,7 @@ export default function Home() {
             {/* Seller Card */}
             <motion.div 
               variants={itemVariants}
-              whileHover={{ y: -6, shadow: "0 10px 25px -5px rgba(0, 0, 0, 0.05), 0 8px 10px -6px rgba(0, 0, 0, 0.05)" }}
+              whileHover={{ y: -6, boxShadow: "0 10px 25px -5px rgba(0, 0, 0, 0.05), 0 8px 10px -6px rgba(0, 0, 0, 0.05)" }}
               className="flex"
             >
               <Card className="border border-zinc-200 bg-white rounded-3xl shadow-xs flex flex-col justify-between p-6 transition-all duration-300 hover:border-green-200">
@@ -228,7 +228,7 @@ export default function Home() {
             {/* Driver Card */}
             <motion.div 
               variants={itemVariants}
-              whileHover={{ y: -6, shadow: "0 10px 25px -5px rgba(0, 0, 0, 0.05), 0 8px 10px -6px rgba(0, 0, 0, 0.05)" }}
+              whileHover={{ y: -6, boxShadow: "0 10px 25px -5px rgba(0, 0, 0, 0.05), 0 8px 10px -6px rgba(0, 0, 0, 0.05)" }}
               className="flex"
             >
               <Card className="border border-zinc-200 bg-white rounded-3xl shadow-xs flex flex-col justify-between p-6 transition-all duration-300 hover:border-orange-200">
@@ -277,7 +277,7 @@ export default function Home() {
                 <motion.div
                   key={review.id}
                   variants={itemVariants}
-                  whileHover={{ y: -4, shadow: "0 10px 20px -5px rgba(0, 0, 0, 0.05)" }}
+                  whileHover={{ y: -4, boxShadow: "0 10px 20px -5px rgba(0, 0, 0, 0.05)" }}
                   className="border border-zinc-200 rounded-3xl p-6 bg-zinc-50 hover:bg-white hover:border-zinc-300 transition-all duration-300 flex flex-col justify-between"
                 >
                   <div>

@@ -130,7 +130,7 @@ export default function ProductsPage() {
                 <motion.div
                   key={product.id}
                   variants={cardVariants}
-                  whileHover={{ y: -6, shadow: "0 10px 25px -5px rgba(0, 0, 0, 0.1), 0 8px 10px -6px rgba(0, 0, 0, 0.1)" }}
+                  whileHover={{ y: -6, boxShadow: "0 10px 25px -5px rgba(0, 0, 0, 0.1), 0 8px 10px -6px rgba(0, 0, 0, 0.1)" }}
                   className="h-full flex"
                 >
                   <Card className="border border-zinc-200 bg-white rounded-2xl shadow-sm flex flex-col justify-between overflow-hidden w-full transition-shadow duration-300">
