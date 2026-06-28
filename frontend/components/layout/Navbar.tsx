@@ -3,7 +3,7 @@
 import Link from "next/link";
 import { useRouter } from "next/navigation";
 import { useEffect, useState } from "react";
-import { Menu, X, LogOut, LayoutDashboard, ShoppingBag, ShieldCheck } from "lucide-react";
+import { Menu, X, LogOut, LayoutDashboard, ShoppingBag, ShieldCheck, ShoppingCart } from "lucide-react";
 import { Button, buttonVariants } from "@/components/ui/button";
 import { Badge } from "@/components/ui/badge";
 import { Sheet, SheetContent, SheetTrigger } from "@/components/ui/sheet";
@@ -71,6 +71,15 @@ export default function Navbar() {
           <div className="hidden md:flex items-center space-x-4">
             {user ? (
               <div className="flex items-center space-x-4">
+                {user.activeRole === "BUYER" && (
+                  <Link
+                    href="/buyer/cart"
+                    className={cn(buttonVariants({ variant: "ghost", size: "sm" }), "flex items-center gap-1.5 text-zinc-700 hover:text-zinc-950")}
+                  >
+                    <ShoppingCart className="h-4 w-4" />
+                    <span>Keranjang</span>
+                  </Link>
+                )}
                 <div className="flex items-center gap-2">
                   <span className="font-semibold text-zinc-800 text-sm">{user.username}</span>
                   {user.activeRole && (
@@ -129,6 +138,15 @@ export default function Navbar() {
                             </Badge>
                           )}
                         </div>
+                        {user.activeRole === "BUYER" && (
+                          <Link
+                            href="/buyer/cart"
+                            className={cn(buttonVariants({ variant: "outline" }), "w-full justify-start flex items-center")}
+                          >
+                            <ShoppingCart className="mr-2 h-4 w-4" />
+                            Keranjang
+                          </Link>
+                        )}
                         <Link
                           href={dashboardPath}
                           className={cn(buttonVariants({ variant: "outline" }), "w-full justify-start flex items-center")}
