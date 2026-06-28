@@ -1,7 +1,7 @@
 "use client";
 
 import Link from "next/link";
-import { useRouter } from "next/navigation";
+import { useRouter, usePathname } from "next/navigation";
 import { useEffect, useState } from "react";
 import { Menu, X, LogOut, LayoutDashboard, ShoppingBag, ShieldCheck, ShoppingCart } from "lucide-react";
 import { Button, buttonVariants } from "@/components/ui/button";
@@ -13,6 +13,7 @@ import api from "@/lib/api";
 
 export default function Navbar() {
   const router = useRouter();
+  const pathname = usePathname();
   const [mounted, setMounted] = useState(false);
   const [user, setUser] = useState<any>(null);
 
@@ -20,8 +21,10 @@ export default function Navbar() {
     setMounted(true);
     if (isLoggedIn()) {
       setUser(getUser());
+    } else {
+      setUser(null);
     }
-  }, []);
+  }, [pathname]);
 
   const handleLogout = async () => {
     try {
