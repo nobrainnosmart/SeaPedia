@@ -17,6 +17,7 @@ export default function SellerOrderDetailPage() {
   const router = useRouter();
   const [order, setOrder] = useState<any>(null);
   const [loading, setLoading] = useState(true);
+  const [processing, setProcessing] = useState(false);
 
   useEffect(() => {
     fetchOrderDetail();
@@ -31,6 +32,19 @@ export default function SellerOrderDetailPage() {
       router.push("/seller/orders");
     } finally {
       setLoading(false);
+    }
+  };
+
+  const handleProcessOrder = async () => {
+    setProcessing(true);
+    try {
+      await api.patch(`/seller/orders/${params.id}/process`);
+      toast.success("Pesanan berhasil diproses dan siap dikirim!");
+      fetchOrderDetail();
+    } catch (err: any) {
+      toast.error(err.response?.data?.error || "Gagal memproses pesanan.");
+    } finally {
+      setProcessing(false);
     }
   };
 
@@ -139,6 +153,14 @@ export default function SellerOrderDetailPage() {
                       <span>Subtotal Belanja</span>
                       <span className="font-medium text-zinc-900">Rp {order.subtotal.toLocaleString("id-ID")}</span>
                     </div>
+
+                    {order.discountAmount > 0 && (
+                      <div className="flex justify-between text-green-600">
+                        <span>Potongan Diskon</span>
+                        <span className="font-medium">-Rp {order.discountAmount.toLocaleString("id-ID")}</span>
+                      </div>
+                    )}
+
                     <div className="flex justify-between">
                       <span>Ongkos Kirim</span>
                       <span className="font-medium text-zinc-900">Rp {order.deliveryFee.toLocaleString("id-ID")}</span>
@@ -154,6 +176,17 @@ export default function SellerOrderDetailPage() {
                       Rp {order.totalAmount.toLocaleString("id-ID")}
                     </span>
                   </div>
+
+                  {/* Process Action Button */}
+                  {order.status === "SEDANG_DIKEMAS" && (
+                    <Button
+                      onClick={handleProcessOrder}
+                      disabled={processing}
+                      className="w-full bg-zinc-950 hover:bg-zinc-800 text-white rounded-xl py-6 font-bold mt-2"
+                    >
+                      {processing ? "Memproses..." : "Proses Pesanan (Siap Dikirim)"}
+                    </Button>
+                  )}
                 </Card>
 
                 {/* Timeline */}

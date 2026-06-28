@@ -10,12 +10,16 @@ interface CheckoutParams {
   buyerId: string;
   deliveryAddressId: string;
   deliveryMethod: 'INSTANT' | 'NEXT_DAY' | 'REGULAR';
+  voucherCode?: string;
+  promoCode?: string;
 }
 
 export const executeCheckout = async ({
   buyerId,
   deliveryAddressId,
   deliveryMethod,
+  voucherCode,
+  promoCode,
 }: CheckoutParams) => {
   if (!DELIVERY_FEES[deliveryMethod]) {
     throw new Error('Metode pengiriman tidak valid');
@@ -60,10 +64,66 @@ export const executeCheckout = async ({
 
     // 3. Compute costs
     const subtotal = cart.items.reduce((sum, item) => sum + item.product.price * item.quantity, 0);
-    const deliveryFee = DELIVERY_FEES[deliveryMethod];
-    const discountAmount = 0; // (Will support Level 4 discounts later)
 
-    const taxBase = subtotal - discountAmount + deliveryFee;
+    let voucherDiscount = 0;
+    let promoDiscount = 0;
+    let dbVoucher = null;
+    let dbPromo = null;
+
+    if (voucherCode) {
+      dbVoucher = await tx.voucher.findUnique({ where: { code: voucherCode } });
+      if (!dbVoucher) {
+        throw new Error('Voucher tidak ditemukan');
+      }
+      if (dbVoucher.storeId !== storeId) {
+        throw new Error('Voucher tidak berlaku untuk toko ini');
+      }
+      if (dbVoucher.usedCount >= dbVoucher.limitCount) {
+        throw new Error('Kuota voucher sudah habis');
+      }
+      if (subtotal < dbVoucher.minPurchase) {
+        throw new Error(`Minimal pembelian untuk voucher adalah Rp ${dbVoucher.minPurchase.toLocaleString('id-ID')}`);
+      }
+
+      if (dbVoucher.discountType === 'FIXED') {
+        voucherDiscount = dbVoucher.discountValue;
+      } else {
+        voucherDiscount = subtotal * (dbVoucher.discountValue / 100);
+        if (dbVoucher.maxDiscount) {
+          voucherDiscount = Math.min(voucherDiscount, dbVoucher.maxDiscount);
+        }
+      }
+      voucherDiscount = Math.min(voucherDiscount, subtotal);
+    }
+
+    if (promoCode) {
+      dbPromo = await tx.promo.findUnique({ where: { code: promoCode } });
+      if (!dbPromo) {
+        throw new Error('Promo tidak ditemukan');
+      }
+      if (dbPromo.usedCount >= dbPromo.limitCount) {
+        throw new Error('Kuota promo sudah habis');
+      }
+      const remainingSubtotal = subtotal - voucherDiscount;
+      if (remainingSubtotal < dbPromo.minPurchase) {
+        throw new Error(`Minimal pembelian untuk promo adalah Rp ${dbPromo.minPurchase.toLocaleString('id-ID')}`);
+      }
+
+      if (dbPromo.discountType === 'FIXED') {
+        promoDiscount = dbPromo.discountValue;
+      } else {
+        promoDiscount = remainingSubtotal * (dbPromo.discountValue / 100);
+        if (dbPromo.maxDiscount) {
+          promoDiscount = Math.min(promoDiscount, dbPromo.maxDiscount);
+        }
+      }
+      promoDiscount = Math.min(promoDiscount, remainingSubtotal);
+    }
+
+    const discountAmount = voucherDiscount + promoDiscount;
+    const deliveryFee = DELIVERY_FEES[deliveryMethod];
+
+    const taxBase = Math.max(0, subtotal - discountAmount) + deliveryFee;
     const taxAmount = taxBase * 0.12; // 12% PPN
     const totalAmount = taxBase + taxAmount;
 
@@ -107,6 +167,8 @@ export const executeCheckout = async ({
         taxAmount,
         totalAmount,
         status: 'SEDANG_DIKEMAS',
+        voucherId: dbVoucher?.id || null,
+        promoId: dbPromo?.id || null,
       },
     });
 
@@ -149,7 +211,21 @@ export const executeCheckout = async ({
       },
     });
 
-    // 11. Empty cart
+    // 11. Increment voucher / promo counters
+    if (dbVoucher) {
+      await tx.voucher.update({
+        where: { id: dbVoucher.id },
+        data: { usedCount: { increment: 1 } },
+      });
+    }
+    if (dbPromo) {
+      await tx.promo.update({
+        where: { id: dbPromo.id },
+        data: { usedCount: { increment: 1 } },
+      });
+    }
+
+    // 12. Empty cart
     await tx.cartItem.deleteMany({
       where: { cartId: cart.id },
     });

@@ -4,9 +4,10 @@ import Link from "next/link";
 import { useRouter } from "next/navigation";
 import { useEffect, useState } from "react";
 import { toast } from "sonner";
-import { AlertCircle, MapPin, Truck, Wallet, ShieldCheck, ArrowLeft, ArrowRight } from "lucide-react";
+import { AlertCircle, MapPin, Truck, Wallet, ShieldCheck, ArrowLeft, ArrowRight, Ticket, X } from "lucide-react";
 import { Button, buttonVariants } from "@/components/ui/button";
 import { Card, CardHeader, CardTitle, CardDescription, CardContent, CardFooter } from "@/components/ui/card";
+import { Input } from "@/components/ui/input";
 import ProtectedRoute from "@/components/auth/ProtectedRoute";
 import DashboardLayout from "@/components/layout/DashboardLayout";
 import api from "@/lib/api";
@@ -23,6 +24,12 @@ export default function BuyerCheckoutPage() {
   const [selectedAddressId, setSelectedAddressId] = useState<string>("");
   const [selectedMethod, setSelectedMethod] = useState<"INSTANT" | "NEXT_DAY" | "REGULAR">("REGULAR");
   const [submitting, setSubmitting] = useState(false);
+
+  // Discount states
+  const [voucherInput, setVoucherInput] = useState("");
+  const [promoInput, setPromoInput] = useState("");
+  const [activeVoucher, setActiveVoucher] = useState<any>(null);
+  const [activePromo, setActivePromo] = useState<any>(null);
 
   useEffect(() => {
     fetchCheckoutData();
@@ -60,10 +67,71 @@ export default function BuyerCheckoutPage() {
     { key: "REGULAR", name: "Pengiriman Reguler", fee: 9000, desc: "Tiba dalam 2-3 Hari" },
   ];
 
+  // Validate Voucher
+  const handleValidateVoucher = async () => {
+    if (!voucherInput.trim()) return;
+    try {
+      const res = await api.post("/discounts/validate", { code: voucherInput.trim().toUpperCase() });
+      if (res.data.type !== "VOUCHER") {
+        toast.error("Kode tersebut adalah kode Promo, gunakan di input Promo Global.");
+        return;
+      }
+      setActiveVoucher(res.data);
+      toast.success("Voucher toko berhasil dipasang!");
+    } catch (err: any) {
+      toast.error(err.response?.data?.error || "Gagal memvalidasi voucher.");
+    }
+  };
+
+  // Validate Promo
+  const handleValidatePromo = async () => {
+    if (!promoInput.trim()) return;
+    try {
+      const res = await api.post("/discounts/validate", { code: promoInput.trim().toUpperCase() });
+      if (res.data.type !== "PROMO") {
+        toast.error("Kode tersebut adalah kode Voucher Toko, gunakan di input Voucher Toko.");
+        return;
+      }
+      setActivePromo(res.data);
+      toast.success("Promo global berhasil dipasang!");
+    } catch (err: any) {
+      toast.error(err.response?.data?.error || "Gagal memvalidasi promo.");
+    }
+  };
+
   // Calculations
   const subtotal = cart?.subtotal || 0;
+
+  let voucherDiscount = 0;
+  if (activeVoucher) {
+    if (activeVoucher.discountType === "FIXED") {
+      voucherDiscount = activeVoucher.discountAmount; // use discountAmount calculated by backend validator
+    } else {
+      voucherDiscount = subtotal * (activeVoucher.discountValue / 100);
+      if (activeVoucher.maxDiscount) {
+        voucherDiscount = Math.min(voucherDiscount, activeVoucher.maxDiscount);
+      }
+    }
+    voucherDiscount = Math.min(voucherDiscount, subtotal);
+  }
+
+  let promoDiscount = 0;
+  const remainingSubtotal = subtotal - voucherDiscount;
+  if (activePromo) {
+    if (activePromo.discountType === "FIXED") {
+      promoDiscount = activePromo.discountAmount; // use discountAmount calculated by backend validator
+    } else {
+      promoDiscount = remainingSubtotal * (activePromo.discountValue / 100);
+      if (activePromo.maxDiscount) {
+        promoDiscount = Math.min(promoDiscount, activePromo.maxDiscount);
+      }
+    }
+    promoDiscount = Math.min(promoDiscount, remainingSubtotal);
+  }
+
+  const discountAmount = voucherDiscount + promoDiscount;
   const deliveryFee = deliveryOptions.find((o) => o.key === selectedMethod)?.fee || 0;
-  const taxBase = subtotal + deliveryFee;
+  const taxBase = Math.max(0, subtotal - discountAmount) + deliveryFee;
   const taxAmount = taxBase * 0.12; // 12% PPN
   const totalAmount = taxBase + taxAmount;
 
@@ -83,6 +151,8 @@ export default function BuyerCheckoutPage() {
       const res = await api.post("/buyer/checkout", {
         deliveryAddressId: selectedAddressId,
         deliveryMethod: selectedMethod,
+        voucherCode: activeVoucher?.code || null,
+        promoCode: activePromo?.code || null,
       });
       toast.success("Pesanan berhasil dibuat!");
       router.push(`/buyer/orders/${res.data.id}`);
@@ -175,6 +245,58 @@ export default function BuyerCheckoutPage() {
                   )}
                 </Card>
 
+                {/* Voucher & Promo Promo */}
+                <Card className="border border-zinc-200 bg-white rounded-3xl p-6 shadow-sm space-y-6">
+                  <h2 className="text-lg font-bold text-zinc-950 flex items-center gap-2">
+                    <Ticket className="h-5 w-5 text-indigo-500" />
+                    Kupon & Potongan Harga
+                  </h2>
+
+                  <div className="grid grid-cols-1 md:grid-cols-2 gap-6">
+                    {/* Store Voucher input */}
+                    <div className="space-y-2">
+                      <label className="block text-xs font-semibold text-zinc-500 uppercase tracking-wider">Voucher Toko</label>
+                      {activeVoucher ? (
+                        <div className="flex items-center justify-between p-3 border border-indigo-150 bg-indigo-50/30 rounded-xl">
+                          <div>
+                            <p className="text-sm font-bold font-mono text-indigo-700">{activeVoucher.code}</p>
+                            <p className="text-[10px] text-zinc-500 font-light mt-0.5">Potongan Rp {voucherDiscount.toLocaleString("id-ID")}</p>
+                          </div>
+                          <Button variant="ghost" size="icon" className="h-8 w-8 rounded-lg text-zinc-400 hover:text-red-500" onClick={() => { setActiveVoucher(null); setVoucherInput(""); }}>
+                            <X className="h-4 w-4" />
+                          </Button>
+                        </div>
+                      ) : (
+                        <div className="flex gap-2">
+                          <Input placeholder="KODE VOUCHER TOKO" value={voucherInput} onChange={(e) => setVoucherInput(e.target.value)} className="rounded-lg border-zinc-200 uppercase font-mono bg-white" />
+                          <Button variant="outline" onClick={handleValidateVoucher} className="rounded-lg border-zinc-200">Gunakan</Button>
+                        </div>
+                      )}
+                    </div>
+
+                    {/* Global Promo input */}
+                    <div className="space-y-2">
+                      <label className="block text-xs font-semibold text-zinc-500 uppercase tracking-wider">Promo Global (Platform)</label>
+                      {activePromo ? (
+                        <div className="flex items-center justify-between p-3 border border-indigo-150 bg-indigo-50/30 rounded-xl">
+                          <div>
+                            <p className="text-sm font-bold font-mono text-indigo-700">{activePromo.code}</p>
+                            <p className="text-[10px] text-zinc-500 font-light mt-0.5">Potongan Rp {promoDiscount.toLocaleString("id-ID")}</p>
+                          </div>
+                          <Button variant="ghost" size="icon" className="h-8 w-8 rounded-lg text-zinc-400 hover:text-red-500" onClick={() => { setActivePromo(null); setPromoInput(""); }}>
+                            <X className="h-4 w-4" />
+                          </Button>
+                        </div>
+                      ) : (
+                        <div className="flex gap-2">
+                          <Input placeholder="KODE PROMO GLOBAL" value={promoInput} onChange={(e) => setPromoInput(e.target.value)} className="rounded-lg border-zinc-200 uppercase font-mono bg-white" />
+                          <Button variant="outline" onClick={handleValidatePromo} className="rounded-lg border-zinc-200">Gunakan</Button>
+                        </div>
+                      )}
+                    </div>
+                  </div>
+                </Card>
+
                 {/* Metode Pengiriman */}
                 <Card className="border border-zinc-200 bg-white rounded-3xl p-6 shadow-sm">
                   <h2 className="text-lg font-bold text-zinc-950 flex items-center gap-2 mb-4">
@@ -222,6 +344,21 @@ export default function BuyerCheckoutPage() {
                       <span>Subtotal Belanja</span>
                       <span className="font-semibold text-zinc-900">Rp {subtotal.toLocaleString("id-ID")}</span>
                     </div>
+
+                    {voucherDiscount > 0 && (
+                      <div className="flex justify-between text-green-600">
+                        <span>Voucher Toko</span>
+                        <span className="font-semibold">-Rp {voucherDiscount.toLocaleString("id-ID")}</span>
+                      </div>
+                    )}
+
+                    {promoDiscount > 0 && (
+                      <div className="flex justify-between text-green-600">
+                        <span>Promo Global</span>
+                        <span className="font-semibold">-Rp {promoDiscount.toLocaleString("id-ID")}</span>
+                      </div>
+                    )}
+
                     <div className="flex justify-between">
                       <span>Ongkos Kirim</span>
                       <span className="font-semibold text-zinc-900">Rp {deliveryFee.toLocaleString("id-ID")}</span>

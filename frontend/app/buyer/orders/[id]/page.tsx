@@ -138,6 +138,12 @@ export default function BuyerOrderDetailPage() {
                       <span>Subtotal</span>
                       <span className="font-medium text-zinc-900">Rp {order.subtotal.toLocaleString("id-ID")}</span>
                     </div>
+                    {order.discountAmount > 0 && (
+                      <div className="flex justify-between text-green-600">
+                        <span>Potongan Diskon</span>
+                        <span className="font-medium">-Rp {order.discountAmount.toLocaleString("id-ID")}</span>
+                      </div>
+                    )}
                     <div className="flex justify-between">
                       <span>Ongkos Kirim</span>
                       <span className="font-medium text-zinc-900">Rp {order.deliveryFee.toLocaleString("id-ID")}</span>

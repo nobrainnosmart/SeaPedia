@@ -8,19 +8,23 @@ const checkoutSchema = z.object({
   deliveryMethod: z.enum(['INSTANT', 'NEXT_DAY', 'REGULAR'], {
     errorMap: () => ({ message: 'Metode pengiriman tidak valid' }),
   }),
+  voucherCode: z.string().optional().nullable(),
+  promoCode: z.string().optional().nullable(),
 });
 
 export const checkout = async (req: Request, res: Response) => {
   const buyerId = req.user!.userId;
   const parsed = checkoutSchema.safeParse(req.body);
   if (!parsed.success) return res.status(400).json({ error: parsed.error.flatten() });
-  const { deliveryAddressId, deliveryMethod } = parsed.data;
+  const { deliveryAddressId, deliveryMethod, voucherCode, promoCode } = parsed.data;
 
   try {
     const order = await executeCheckout({
       buyerId,
       deliveryAddressId,
       deliveryMethod,
+      voucherCode: voucherCode || undefined,
+      promoCode: promoCode || undefined,
     });
     res.status(201).json(order);
   } catch (err: any) {
@@ -108,4 +112,37 @@ export const getSellerOrderDetail = async (req: Request, res: Response) => {
   }
 
   res.json(order);
+};
+
+export const processOrder = async (req: Request, res: Response) => {
+  const sellerId = req.user!.userId;
+  const { id } = req.params;
+
+  const order = await prisma.order.findUnique({ where: { id } });
+  if (!order || order.sellerId !== sellerId) {
+    return res.status(404).json({ error: 'Pesanan tidak ditemukan' });
+  }
+
+  if (order.status !== 'SEDANG_DIKEMAS') {
+    return res.status(400).json({ error: 'Status pesanan tidak valid untuk diproses' });
+  }
+
+  const updatedOrder = await prisma.$transaction(async (tx) => {
+    const updated = await tx.order.update({
+      where: { id },
+      data: { status: 'MENUNGGU_PENGIRIM' },
+    });
+
+    await tx.orderStatusHistory.create({
+      data: {
+        orderId: id,
+        status: 'MENUNGGU_PENGIRIM',
+        note: 'Pesanan telah selesai dikemas dan siap untuk dikirim',
+      },
+    });
+
+    return updated;
+  });
+
+  res.json(updatedOrder);
 };

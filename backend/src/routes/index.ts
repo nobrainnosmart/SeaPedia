@@ -6,7 +6,8 @@ import { createProduct, getSellerProducts, updateProduct, deleteProduct, getProd
 import { getWallet, topupWallet } from '../controllers/wallet.controller';
 import { getAddresses, createAddress, updateAddress, deleteAddress, setDefaultAddress } from '../controllers/address.controller';
 import { getCart, addCartItem, updateCartItem, removeCartItem, clearCart } from '../controllers/cart.controller';
-import { checkout, getBuyerOrders, getBuyerOrderDetail, getSellerOrders, getSellerOrderDetail } from '../controllers/order.controller';
+import { checkout, getBuyerOrders, getBuyerOrderDetail, getSellerOrders, getSellerOrderDetail, processOrder } from '../controllers/order.controller';
+import { createVoucher, getSellerVouchers, createPromo, getPromos, validateDiscount } from '../controllers/discount.controller';
 import { verifyToken, requireRole } from '../middlewares/auth.middleware';
 
 const router = Router();
@@ -60,6 +61,14 @@ router.get('/buyer/orders', verifyToken, requireRole('BUYER'), getBuyerOrders);
 router.get('/buyer/orders/:id', verifyToken, requireRole('BUYER'), getBuyerOrderDetail);
 router.get('/seller/orders', verifyToken, requireRole('SELLER'), getSellerOrders);
 router.get('/seller/orders/:id', verifyToken, requireRole('SELLER'), getSellerOrderDetail);
+router.patch('/seller/orders/:id/process', verifyToken, requireRole('SELLER'), processOrder);
+
+// Discounts & Vouchers
+router.post('/seller/vouchers', verifyToken, requireRole('SELLER'), createVoucher);
+router.get('/seller/vouchers', verifyToken, requireRole('SELLER'), getSellerVouchers);
+router.post('/admin/promos', verifyToken, requireRole('ADMIN'), createPromo);
+router.get('/admin/promos', verifyToken, requireRole('ADMIN'), getPromos);
+router.post('/discounts/validate', verifyToken, requireRole('BUYER'), validateDiscount);
 
 // Health check
 router.get('/health', (_req, res) => res.json({ status: 'ok', timestamp: new Date() }));
