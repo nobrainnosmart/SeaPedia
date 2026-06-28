@@ -18,6 +18,31 @@ api.interceptors.response.use(
       localStorage.removeItem('seapedia_user');
       window.location.href = '/auth/login';
     }
+
+    // Global formatting for backend Zod validation error objects
+    if (err.response?.data?.error && typeof err.response.data.error === 'object') {
+      const errorObj = err.response.data.error;
+      let formattedMsg = '';
+
+      if (errorObj.fieldErrors && typeof errorObj.fieldErrors === 'object') {
+        const errors = Object.entries(errorObj.fieldErrors)
+          .map(([field, msgs]) => {
+            const fieldMsgs = Array.isArray(msgs) ? msgs.join(', ') : String(msgs);
+            return `${field}: ${fieldMsgs}`;
+          })
+          .join(' | ');
+        if (errors) formattedMsg = errors;
+      } else if (errorObj.formErrors && Array.isArray(errorObj.formErrors) && errorObj.formErrors.length > 0) {
+        formattedMsg = errorObj.formErrors.join(', ');
+      } else if (typeof errorObj.message === 'string') {
+        formattedMsg = errorObj.message;
+      }
+
+      if (formattedMsg) {
+        err.response.data.error = formattedMsg;
+      }
+    }
+
     return Promise.reject(err);
   }
 );
