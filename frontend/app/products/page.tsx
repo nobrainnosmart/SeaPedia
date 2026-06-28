@@ -17,12 +17,12 @@ const containerVariants = {
     opacity: 1,
     transition: { staggerChildren: 0.05 }
   }
-};
+} as const;
 
 const cardVariants = {
   hidden: { opacity: 0, y: 15 },
-  show: { opacity: 1, y: 0, transition: { type: "spring", stiffness: 100, damping: 16 } }
-};
+  show: { opacity: 1, y: 0, transition: { type: "spring" as const, stiffness: 100, damping: 16 } }
+} as const;
 
 export default function ProductsPage() {
   const [products, setProducts] = useState<any[]>([]);
