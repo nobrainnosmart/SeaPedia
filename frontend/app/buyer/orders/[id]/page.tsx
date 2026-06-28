@@ -11,6 +11,7 @@ import ProtectedRoute from "@/components/auth/ProtectedRoute";
 import DashboardLayout from "@/components/layout/DashboardLayout";
 import api from "@/lib/api";
 import { cn } from "@/lib/utils";
+import { motion } from "framer-motion";
 
 export default function BuyerOrderDetailPage() {
   const params = useParams();
@@ -230,29 +231,47 @@ export default function BuyerOrderDetailPage() {
                     <Clock className="h-5 w-5 text-indigo-500" />
                     Lacak Pesanan
                   </h2>
-                  <div className="relative border-l-2 border-zinc-150 pl-6 ml-3 space-y-6">
-                    {order.statusHistory.map((history: any, index: number) => (
-                      <div key={history.id} className="relative">
-                        {/* Dot Indicator */}
-                        <div className={cn(
-                          "absolute -left-[31px] top-1 h-4.5 w-4.5 rounded-full border-2 border-white flex items-center justify-center shadow-sm",
-                          index === 0 ? "bg-indigo-500" : "bg-zinc-300"
-                        )} />
-                        <div>
-                          <p className="text-xs text-zinc-400 font-medium">
-                            {new Date(history.createdAt).toLocaleString("id-ID")}
-                          </p>
-                          <p className={cn("text-sm font-bold mt-0.5", index === 0 ? "text-zinc-900" : "text-zinc-500")}>
-                            {history.status.replace("_", " ")}
-                          </p>
-                          {history.note && (
-                            <p className="text-xs text-zinc-500 mt-1 font-light leading-relaxed">
-                              {history.note}
+                  <div className="relative border-l border-zinc-200 pl-6 ml-3.5 space-y-6">
+                    {order.statusHistory.map((history: any, index: number) => {
+                      const isActive = index === 0;
+                      return (
+                        <motion.div
+                          key={history.id}
+                          initial={{ opacity: 0, x: -10 }}
+                          animate={{ opacity: 1, x: 0 }}
+                          transition={{ delay: index * 0.08, type: "spring", stiffness: 100 }}
+                          className="relative"
+                        >
+                          {/* Dot Indicator */}
+                          <div className="absolute -left-[32px] top-1.5 flex items-center justify-center">
+                            {isActive ? (
+                              <span className="relative flex h-3.5 w-3.5">
+                                <span className="animate-ping absolute inline-flex h-full w-full rounded-full bg-indigo-400 opacity-75"></span>
+                                <span className="relative inline-flex rounded-full h-3.5 w-3.5 bg-indigo-600"></span>
+                              </span>
+                            ) : (
+                              <span className="relative flex h-3.5 w-3.5 rounded-full bg-zinc-300 border-2 border-white shadow-xs"></span>
+                            )}
+                          </div>
+                          <div className={cn("rounded-2xl p-4 transition-all duration-300", isActive ? "bg-zinc-50 border border-zinc-150" : "")}>
+                            <p className="text-[10px] text-zinc-400 font-mono tracking-wider uppercase mb-1">
+                              {new Date(history.createdAt).toLocaleString("id-ID", {
+                                dateStyle: "medium",
+                                timeStyle: "short",
+                              })}
                             </p>
-                          )}
-                        </div>
-                      </div>
-                    ))}
+                            <p className={cn("text-sm font-bold capitalize", isActive ? "text-indigo-600 font-extrabold" : "text-zinc-700")}>
+                              {history.status.toLowerCase().replace(/_/g, " ")}
+                            </p>
+                            {history.note && (
+                              <p className="text-xs text-zinc-500 mt-1 font-light leading-relaxed">
+                                {history.note}
+                              </p>
+                            )}
+                          </div>
+                        </motion.div>
+                      );
+                    })}
                   </div>
                 </Card>
               </div>

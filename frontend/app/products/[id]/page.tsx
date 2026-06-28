@@ -11,6 +11,8 @@ import { toast } from "sonner";
 import { getUser, isLoggedIn } from "@/lib/auth";
 import api from "@/lib/api";
 import { cn } from "@/lib/utils";
+import { Skeleton } from "@/components/ui/skeleton";
+import { motion, AnimatePresence } from "framer-motion";
 
 export default function ProductDetailPage() {
   const params = useParams();
@@ -62,8 +64,20 @@ export default function ProductDetailPage() {
 
   if (loading) {
     return (
-      <div className="max-w-7xl mx-auto px-4 py-20 text-center text-zinc-500 animate-pulse">
-        Memuat detail produk...
+      <div className="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8 py-12">
+        <Skeleton className="h-9 w-32 mb-8" />
+        <div className="grid grid-cols-1 lg:grid-cols-2 gap-12">
+          <Skeleton className="h-96 w-full rounded-3xl" />
+          <div className="space-y-6 flex flex-col justify-between">
+            <div className="space-y-4">
+              <Skeleton className="h-5 w-24" />
+              <Skeleton className="h-10 w-3/4" />
+              <Skeleton className="h-8 w-1/3" />
+              <Skeleton className="h-32 w-full mt-6" />
+            </div>
+            <Skeleton className="h-24 w-full rounded-2xl" />
+          </div>
+        </div>
       </div>
     );
   }
@@ -95,23 +109,34 @@ export default function ProductDetailPage() {
   return (
     <div className="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8 py-12">
       {/* Back button */}
-      <Link
-        href="/products"
-        className={cn(buttonVariants({ variant: "ghost" }), "mb-8 hover:bg-zinc-100 rounded-lg flex items-center gap-1 w-fit")}
-      >
-        <ArrowLeft className="h-4 w-4" />
-        Kembali ke Katalog
-      </Link>
+      <motion.div initial={{ opacity: 0, x: -10 }} animate={{ opacity: 1, x: 0 }} transition={{ duration: 0.3 }}>
+        <Link
+          href="/products"
+          className={cn(buttonVariants({ variant: "ghost" }), "mb-8 hover:bg-zinc-100 rounded-lg flex items-center gap-1 w-fit")}
+        >
+          <ArrowLeft className="h-4 w-4" />
+          Kembali ke Katalog
+        </Link>
+      </motion.div>
 
-      <div className="grid grid-cols-1 lg:grid-cols-2 gap-12">
+      <motion.div 
+        initial={{ opacity: 0, y: 15 }} 
+        animate={{ opacity: 1, y: 0 }} 
+        transition={{ type: "spring", stiffness: 100, damping: 18 }} 
+        className="grid grid-cols-1 lg:grid-cols-2 gap-12"
+      >
         {/* Product Image Placeholder */}
-        <div className="h-96 bg-zinc-100 rounded-3xl flex items-center justify-center border border-zinc-200 overflow-hidden">
+        <motion.div 
+          whileHover={{ scale: 1.01 }}
+          transition={{ duration: 0.3 }}
+          className="h-96 bg-zinc-100 rounded-3xl flex items-center justify-center border border-zinc-200 overflow-hidden shadow-xs relative"
+        >
           {product.imageUrl ? (
             <img src={product.imageUrl} alt={product.name} className="h-full w-full object-cover" />
           ) : (
             <span className="text-6xl font-bold text-zinc-300 tracking-wider">{initials}</span>
           )}
-        </div>
+        </motion.div>
 
         {/* Product Details */}
         <div className="flex flex-col justify-between">
@@ -144,10 +169,12 @@ export default function ProductDetailPage() {
           <Card className="border border-zinc-200 bg-white rounded-2xl p-6 shadow-sm mt-6">
             <CardContent className="p-0 flex flex-col gap-4">
               {isBuyer ? (
-                <Button onClick={handleAddToCart} className="w-full bg-zinc-950 hover:bg-zinc-800 text-white rounded-xl py-6 flex items-center justify-center gap-2">
-                  <ShoppingCart className="h-5 w-5" />
-                  Tambah ke Keranjang
-                </Button>
+                <motion.div whileHover={{ scale: 1.01 }} whileTap={{ scale: 0.98 }}>
+                  <Button onClick={handleAddToCart} className="w-full bg-zinc-950 hover:bg-zinc-900 text-white rounded-xl py-6 flex items-center justify-center gap-2 shadow-xs cursor-pointer">
+                    <ShoppingCart className="h-5 w-5" />
+                    Tambah ke Keranjang
+                  </Button>
+                </motion.div>
               ) : (
                 <div className="text-center py-2">
                   <p className="text-zinc-500 text-sm font-light mb-4">
@@ -166,7 +193,7 @@ export default function ProductDetailPage() {
             </CardContent>
           </Card>
         </div>
-      </div>
+      </motion.div>
 
       {/* Conflict Dialog */}
       <Dialog open={isConflictOpen} onOpenChange={setIsConflictOpen}>
