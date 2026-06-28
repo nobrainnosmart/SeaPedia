@@ -24,6 +24,7 @@ model User {
   cart        Cart?     @relation("BuyerCart")
   buyerOrders Order[]   @relation("BuyerOrders")
   sellerOrders Order[]  @relation("SellerOrders")
+  driverOrders Order[]  @relation("DriverOrders")
 }
 
 model UserRole {
@@ -149,11 +150,13 @@ model Order {
   status            String          @default("SEDANG_DIKEMAS") // SEDANG_DIKEMAS, MENUNGGU_PENGIRIM, SEDANG_DIKIRIM, PESANAN_SELESAI, DIKEMBALIKAN
   voucherId         String?
   promoId           String?
+  driverId          String?
   createdAt         DateTime        @default(now())
   updatedAt         DateTime        @updatedAt
 
   buyer             User            @relation("BuyerOrders", fields: [buyerId], references: [id])
   seller            User            @relation("SellerOrders", fields: [sellerId], references: [id])
+  driver            User?           @relation("DriverOrders", fields: [driverId], references: [id])
   store             Store           @relation(fields: [storeId], references: [id])
   deliveryAddress   DeliveryAddress @relation(fields: [deliveryAddressId], references: [id])
   items             OrderItem[]
@@ -214,4 +217,9 @@ model Promo {
   updatedAt     DateTime @updatedAt
 
   orders        Order[]
+}
+
+model SystemConfig {
+  key   String @id
+  value String
 }

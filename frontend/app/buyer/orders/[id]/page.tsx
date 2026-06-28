@@ -17,9 +17,12 @@ export default function BuyerOrderDetailPage() {
   const router = useRouter();
   const [order, setOrder] = useState<any>(null);
   const [loading, setLoading] = useState(true);
+  const [virtualTime, setVirtualTime] = useState<Date | null>(null);
+  const [cancelling, setCancelling] = useState(false);
 
   useEffect(() => {
     fetchOrderDetail();
+    fetchSystemTime();
   }, [params.id]);
 
   const fetchOrderDetail = async () => {
@@ -32,6 +35,48 @@ export default function BuyerOrderDetailPage() {
     } finally {
       setLoading(false);
     }
+  };
+
+  const fetchSystemTime = async () => {
+    try {
+      const res = await api.get("/health");
+      setVirtualTime(new Date(res.data.timestamp));
+    } catch (err) {
+      setVirtualTime(new Date());
+    }
+  };
+
+  const handleCancelOverdue = async () => {
+    setCancelling(true);
+    try {
+      await api.post(`/buyer/orders/${params.id}/cancel-overdue`);
+      toast.success("Pesanan berhasil dibatalkan karena keterlambatan!");
+      fetchOrderDetail();
+    } catch (err: any) {
+      toast.error(err.response?.data?.error || "Gagal membatalkan pesanan.");
+    } finally {
+      setCancelling(false);
+    }
+  };
+
+  const isOverdue = () => {
+    if (!order || !virtualTime) return false;
+    const activeStatuses = ["SEDANG_DIKEMAS", "MENUNGGU_PENGIRIM", "SEDANG_DIKIRIM"];
+    if (!activeStatuses.includes(order.status)) return false;
+
+    const createdAt = new Date(order.createdAt);
+    const elapsedMs = virtualTime.getTime() - createdAt.getTime();
+    
+    let limitMs = 0;
+    if (order.deliveryMethod === "INSTANT") {
+      limitMs = 2 * 60 * 60 * 1000;
+    } else if (order.deliveryMethod === "NEXT_DAY") {
+      limitMs = 24 * 60 * 60 * 1000;
+    } else {
+      limitMs = 72 * 60 * 60 * 1000;
+    }
+
+    return elapsedMs > limitMs;
   };
 
   const getStatusColor = (status: string) => {
@@ -123,6 +168,13 @@ export default function BuyerOrderDetailPage() {
                     <div className="text-sm text-zinc-700 font-light">
                       <p className="font-semibold text-zinc-800">{order.deliveryMethod}</p>
                       <p className="mt-1">Ongkos Kirim: <strong>Rp {order.deliveryFee.toLocaleString("id-ID")}</strong></p>
+                      {order.driver ? (
+                        <p className="mt-2 text-indigo-600 font-medium">Kurir: {order.driver.username}</p>
+                      ) : (
+                        order.status !== "SEDANG_DIKEMAS" && order.status !== "DIKEMBALIKAN" && (
+                          <p className="mt-2 text-zinc-500 font-light italic">Mencari kurir...</p>
+                        )
+                      )}
                     </div>
                   </div>
                 </Card>
@@ -159,6 +211,17 @@ export default function BuyerOrderDetailPage() {
                       Rp {order.totalAmount.toLocaleString("id-ID")}
                     </span>
                   </div>
+
+                  {/* Cancel Overdue Action Button */}
+                  {isOverdue() && (
+                    <Button
+                      onClick={handleCancelOverdue}
+                      disabled={cancelling}
+                      className="w-full bg-red-600 hover:bg-red-700 text-white rounded-xl py-6 font-bold mt-2"
+                    >
+                      {cancelling ? "Membatalkan..." : "Batalkan & Refund (Overdue)"}
+                    </Button>
+                  )}
                 </Card>
 
                 {/* Timeline */}

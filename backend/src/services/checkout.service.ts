@@ -1,4 +1,5 @@
 import { prisma } from '../utils/prisma';
+import { getSystemTime } from '../utils/time';
 
 export const DELIVERY_FEES: Record<string, number> = {
   INSTANT: 25000,
@@ -153,6 +154,8 @@ export const executeCheckout = async ({
       });
     }
 
+    const systemTime = await getSystemTime();
+
     // 6. Create Order
     const order = await tx.order.create({
       data: {
@@ -169,6 +172,8 @@ export const executeCheckout = async ({
         status: 'SEDANG_DIKEMAS',
         voucherId: dbVoucher?.id || null,
         promoId: dbPromo?.id || null,
+        createdAt: systemTime,
+        updatedAt: systemTime,
       },
     });
 
@@ -191,6 +196,7 @@ export const executeCheckout = async ({
         orderId: order.id,
         status: 'SEDANG_DIKEMAS',
         note: 'Pesanan dibuat',
+        createdAt: systemTime,
       },
     });
 
@@ -208,6 +214,7 @@ export const executeCheckout = async ({
         amount: totalAmount,
         description: `Pembayaran pesanan #${order.id.slice(-8)}`,
         orderId: order.id,
+        createdAt: systemTime,
       },
     });
 

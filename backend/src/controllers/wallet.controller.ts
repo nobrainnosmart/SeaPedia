@@ -1,6 +1,7 @@
 import { Request, Response } from 'express';
 import { z } from 'zod';
 import { prisma } from '../utils/prisma';
+import { getSystemTime } from '../utils/time';
 
 const topupSchema = z.object({
   amount: z.number().int().positive('Jumlah top up harus lebih besar dari 0').max(10000000, 'Maksimal top up Rp 10.000.000'),
@@ -45,6 +46,7 @@ export const topupWallet = async (req: Request, res: Response) => {
         type: 'TOPUP',
         amount,
         description: `Top up Rp ${amount.toLocaleString('id-ID')}`,
+        createdAt: await getSystemTime(),
       },
     });
 
