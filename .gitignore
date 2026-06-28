@@ -1,0 +1,13 @@
+node_modules/
+dist/
+.env
+.env.local
+*.db
+*.db-journal
+.next/
+pnpm
+pnpx
+yarn
+yarnpkg
+npm
+npx
