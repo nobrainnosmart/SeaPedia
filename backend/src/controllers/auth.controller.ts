@@ -69,7 +69,13 @@ export const selectRole = async (req: Request, res: Response) => {
   if (!role) return res.status(400).json({ error: 'Role is required' });
   if (!req.user!.roles.includes(role)) return res.status(403).json({ error: 'You do not have this role' });
 
-  const newToken = jwt.sign({ ...req.user, activeRole: role }, JWT_SECRET, { expiresIn: '7d' });
+  const payload: JwtPayload = {
+    userId: req.user!.userId,
+    roles: req.user!.roles,
+    activeRole: role,
+  };
+
+  const newToken = jwt.sign(payload, JWT_SECRET, { expiresIn: '7d' });
   res.json({ token: newToken, activeRole: role });
 };
 
