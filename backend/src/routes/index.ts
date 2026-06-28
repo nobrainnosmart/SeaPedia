@@ -9,7 +9,8 @@ import { getCart, addCartItem, updateCartItem, removeCartItem, clearCart } from 
 import { checkout, getBuyerOrders, getBuyerOrderDetail, getSellerOrders, getSellerOrderDetail, processOrder, cancelOverdueOrder } from '../controllers/order.controller';
 import { createVoucher, getSellerVouchers, createPromo, getPromos, validateDiscount } from '../controllers/discount.controller';
 import { getAvailableJobs, acceptJob, completeJob, getDriverHistory, getDriverEarnings } from '../controllers/driver.controller';
-import { getDeliveryJobsAdmin, getOverdueOrdersAdmin, getTimeSimulation, updateTimeSimulation } from '../controllers/admin.controller';
+import { getDeliveryJobsAdmin, getOverdueOrdersAdmin, getTimeSimulation, updateTimeSimulation, getPlatformStats, getAllUsers, getAllStores, getAllProducts, getAllOrders } from '../controllers/admin.controller';
+import { getBuyerReport, getSellerReport } from '../controllers/report.controller';
 import { getSystemTime } from '../utils/time';
 import { verifyToken, requireRole } from '../middlewares/auth.middleware';
 
@@ -74,11 +75,22 @@ router.post('/driver/jobs/:id/complete', verifyToken, requireRole('DRIVER'), com
 router.get('/driver/history', verifyToken, requireRole('DRIVER'), getDriverHistory);
 router.get('/driver/earnings', verifyToken, requireRole('DRIVER'), getDriverEarnings);
 
+// Reports
+router.get('/buyer/reports', verifyToken, requireRole('BUYER'), getBuyerReport);
+router.get('/seller/reports', verifyToken, requireRole('SELLER'), getSellerReport);
+
 // Admin Monitoring & Simulation
 router.get('/admin/delivery-jobs', verifyToken, requireRole('ADMIN'), getDeliveryJobsAdmin);
 router.get('/admin/overdue', verifyToken, requireRole('ADMIN'), getOverdueOrdersAdmin);
 router.get('/admin/time-simulation', verifyToken, requireRole('ADMIN'), getTimeSimulation);
 router.post('/admin/time-simulation', verifyToken, requireRole('ADMIN'), updateTimeSimulation);
+
+// Admin Super-Panel
+router.get('/admin/stats', verifyToken, requireRole('ADMIN'), getPlatformStats);
+router.get('/admin/users', verifyToken, requireRole('ADMIN'), getAllUsers);
+router.get('/admin/stores', verifyToken, requireRole('ADMIN'), getAllStores);
+router.get('/admin/products', verifyToken, requireRole('ADMIN'), getAllProducts);
+router.get('/admin/orders', verifyToken, requireRole('ADMIN'), getAllOrders);
 
 // Discounts & Vouchers
 router.post('/seller/vouchers', verifyToken, requireRole('SELLER'), createVoucher);

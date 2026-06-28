@@ -52,6 +52,7 @@ export default function DashboardLayout({ children }: { children: React.ReactNod
           { label: "Toko Saya", href: "/seller/store", icon: Store },
           { label: "Produk", href: "/seller/products", icon: ShoppingBag },
           { label: "Pesanan", href: "/seller/orders", icon: ShoppingCart },
+          { label: "Voucher", href: "/seller/vouchers", icon: Percent },
           { label: "Laporan", href: "/seller/reports", icon: BarChart2 },
         ];
       case "DRIVER":
