@@ -2,15 +2,16 @@
 
 import { useEffect, useState } from "react";
 import { toast } from "sonner";
-import { Store, Pencil, Plus } from "lucide-react";
+import { Store, Pencil, Store as StoreIcon } from "lucide-react";
 import { Button, buttonVariants } from "@/components/ui/button";
 import { Card, CardHeader, CardTitle, CardDescription, CardContent } from "@/components/ui/card";
 import { Input } from "@/components/ui/input";
-import { Dialog, DialogContent, DialogHeader, DialogTitle, DialogDescription } from "@/components/ui/dialog";
+import { Dialog, DialogContent, DialogHeader, DialogTitle, DialogDescription, DialogFooter } from "@/components/ui/dialog";
 import ProtectedRoute from "@/components/auth/ProtectedRoute";
 import DashboardLayout from "@/components/layout/DashboardLayout";
 import api from "@/lib/api";
 import { cn } from "@/lib/utils";
+import Link from "next/link";
 
 export default function SellerStorePage() {
   const [store, setStore] = useState<any>(null);
@@ -18,6 +19,7 @@ export default function SellerStorePage() {
   const [name, setName] = useState("");
   const [description, setDescription] = useState("");
   const [isEditOpen, setIsEditOpen] = useState(false);
+  const [submitting, setSubmitting] = useState(false);
 
   useEffect(() => {
     fetchStore();
@@ -45,12 +47,15 @@ export default function SellerStorePage() {
       return;
     }
 
+    setSubmitting(true);
     try {
       const res = await api.post("/seller/store", { name, description });
       setStore(res.data);
       toast.success("Toko berhasil dibuat!");
     } catch (err: any) {
       toast.error(err.response?.data?.error || "Gagal membuat toko.");
+    } finally {
+      setSubmitting(false);
     }
   };
 
@@ -61,6 +66,7 @@ export default function SellerStorePage() {
       return;
     }
 
+    setSubmitting(true);
     try {
       const res = await api.put("/seller/store", { name, description });
       setStore(res.data);
@@ -69,47 +75,60 @@ export default function SellerStorePage() {
       fetchStore();
     } catch (err: any) {
       toast.error(err.response?.data?.error || "Gagal memperbarui toko.");
+    } finally {
+      setSubmitting(false);
     }
+  };
+
+  const getInitials = (name: string) => {
+    if (!name) return "";
+    return name.slice(0, 2).toUpperCase();
   };
 
   return (
     <ProtectedRoute allowedRole="SELLER">
       <DashboardLayout>
         {loading ? (
-          <div className="text-center py-12 text-zinc-500 animate-pulse">Memuat...</div>
+          <div className="flex items-center justify-center py-20">
+            <span className="text-xs text-muted-foreground animate-pulse font-mono">Memuat Profil Toko...</span>
+          </div>
         ) : !store ? (
           /* Create Store Card */
-          <Card className="max-w-xl mx-auto border border-zinc-200 bg-white rounded-3xl shadow-sm">
-            <CardHeader className="text-center">
-              <div className="mx-auto h-12 w-12 bg-zinc-100 text-zinc-700 rounded-full flex items-center justify-center mb-4">
-                <Store className="h-6 w-6" />
+          <Card className="max-w-xl mx-auto border border-line bg-white rounded-default shadow-card">
+            <CardHeader className="text-center pb-4">
+              <div className="mx-auto h-12 w-12 bg-role-seller/10 text-role-seller rounded-full flex items-center justify-center mb-2 border border-role-seller/10">
+                <StoreIcon className="h-6 w-6" />
               </div>
-              <CardTitle className="text-xl font-bold">Buat Toko Baru</CardTitle>
-              <CardDescription className="font-light">Mulai berjualan dengan mendaftarkan nama toko Anda.</CardDescription>
+              <CardTitle className="text-lg font-bold text-manifest-ink font-display">Registrasi Toko Baru</CardTitle>
+              <CardDescription className="text-xs text-muted-foreground font-light">Mulai jualan online dengan mendaftarkan warung atau gudang Anda.</CardDescription>
             </CardHeader>
             <form onSubmit={handleCreate}>
               <CardContent className="space-y-4">
-                <div>
-                  <label className="block text-xs font-semibold text-zinc-500 uppercase tracking-wider mb-2">Nama Toko</label>
+                <div className="space-y-1.5">
+                  <label className="block text-[10px] font-semibold text-muted-foreground uppercase tracking-wider">Nama Toko</label>
                   <Input
-                    placeholder="Nama Toko Anda"
+                    placeholder="Contoh: Toko Sembako Makmur"
                     value={name}
                     onChange={(e) => setName(e.target.value)}
-                    className="rounded-lg border-zinc-200"
+                    className="rounded-lg border-line bg-white h-9 text-xs focus-visible:ring-1 focus-visible:ring-sea-mid"
                   />
                 </div>
-                <div>
-                  <label className="block text-xs font-semibold text-zinc-500 uppercase tracking-wider mb-2">Deskripsi</label>
+                <div className="space-y-1.5">
+                  <label className="block text-[10px] font-semibold text-muted-foreground uppercase tracking-wider">Deskripsi Layanan</label>
                   <textarea
-                    placeholder="Deskripsikan barang atau layanan yang ditawarkan..."
+                    placeholder="Jelaskan jenis pasokan kargo atau produk sedia jual..."
                     value={description}
                     onChange={(e) => setDescription(e.target.value)}
                     rows={4}
-                    className="w-full rounded-lg border border-zinc-200 p-3 bg-white text-sm focus:outline-none focus:ring-1 focus:ring-zinc-950 focus:border-transparent transition"
+                    className="w-full rounded-lg border border-line p-3 bg-white text-xs focus:outline-none focus:ring-1 focus:ring-sea-mid transition"
                   />
                 </div>
-                <Button type="submit" className="w-full bg-zinc-950 hover:bg-zinc-800 text-white rounded-lg">
-                  Buat Toko
+                <Button 
+                  type="submit" 
+                  disabled={submitting}
+                  className="w-full bg-cargo-amber hover:bg-cargo-amber/90 text-white rounded-lg h-9 text-xs font-bold border-0 shadow-sm"
+                >
+                  {submitting ? "Memproses..." : "Buat Toko Sekarang"}
                 </Button>
               </CardContent>
             </form>
@@ -117,70 +136,93 @@ export default function SellerStorePage() {
         ) : (
           /* View Store Details */
           <div className="space-y-6">
-            <div className="flex justify-between items-center">
-              <h1 className="text-2xl font-bold text-zinc-950">Toko Saya</h1>
-              <Button onClick={() => setIsEditOpen(true)} className="flex items-center gap-1.5 rounded-lg border-zinc-200" variant="outline">
-                <Pencil className="h-4 w-4" />
-                Edit Profil Toko
+            <div className="flex flex-col sm:flex-row sm:items-center sm:justify-between gap-4">
+              <div>
+                <span className="text-xs uppercase tracking-wider font-semibold text-role-seller">Profil Usaha</span>
+                <h1 className="text-2xl font-bold text-manifest-ink font-display mt-0.5">Toko Saya</h1>
+                <p className="text-muted-foreground text-xs font-light mt-0.5">Kelola identitas warung dan visual katalog pembeli Anda.</p>
+              </div>
+              <Button 
+                onClick={() => setIsEditOpen(true)} 
+                className="flex items-center gap-1.5 rounded-lg border-line hover:bg-sea-foam/40 h-9 text-xs font-semibold text-manifest-ink shrink-0 w-fit" 
+                variant="outline"
+              >
+                <Pencil className="h-3.5 w-3.5" />
+                <span>Edit Toko</span>
               </Button>
             </div>
 
-            <div className="grid grid-cols-1 md:grid-cols-3 gap-6">
-              <Card className="md:col-span-2 border border-zinc-200 bg-white rounded-3xl p-8 shadow-sm">
-                <div className="flex items-start gap-4">
-                  <div className="h-16 w-16 bg-zinc-100 text-zinc-700 rounded-2xl flex items-center justify-center border border-zinc-200">
-                    <Store className="h-8 w-8" />
+            <div className="grid grid-cols-1 md:grid-cols-12 gap-6 items-stretch">
+              {/* Profile Card */}
+              <Card className="md:col-span-8 border border-line bg-white rounded-default p-6 shadow-card flex flex-col justify-center">
+                <div className="flex flex-col sm:flex-row sm:items-start gap-4">
+                  <div className="h-16 w-16 bg-role-seller text-white rounded-full flex items-center justify-center font-bold text-xl shadow-inner border-2 border-white shrink-0">
+                    {getInitials(store.name)}
                   </div>
-                  <div>
-                    <h2 className="text-xl font-bold text-zinc-900">{store.name}</h2>
-                    <p className="text-sm text-zinc-500 font-light mt-1">
-                      {store.description || "Belum ada deskripsi."}
+                  <div className="space-y-2">
+                    <h2 className="text-lg font-bold text-manifest-ink font-display leading-tight">{store.name}</h2>
+                    <p className="text-xs text-muted-foreground font-light leading-relaxed">
+                      {store.description || "Belum memiliki deskripsi toko."}
                     </p>
+                    <div className="pt-2">
+                      <Link 
+                        href={`/stores/${store.id}`}
+                        className="text-xs font-semibold text-role-seller hover:underline inline-flex items-center gap-1"
+                      >
+                        Lihat sebagai Pembeli &rarr;
+                      </Link>
+                    </div>
                   </div>
                 </div>
               </Card>
 
-              <Card className="border border-zinc-200 bg-white rounded-3xl p-8 shadow-sm flex flex-col justify-center items-center text-center">
-                <span className="text-sm text-zinc-400 font-light">Total Produk</span>
-                <span className="text-4xl font-extrabold text-zinc-950 mt-1">
+              {/* Counters */}
+              <Card className="md:col-span-4 border border-line bg-white rounded-default p-6 shadow-card flex flex-col justify-center items-center text-center">
+                <span className="text-[10px] text-muted-foreground font-semibold uppercase tracking-wider">Total Produk Jualan</span>
+                <span className="text-4xl font-extrabold text-manifest-ink mt-1.5 font-mono tabular-nums">
                   {store._count?.products || 0}
                 </span>
+                <span className="text-[10px] text-muted-foreground/60 font-light mt-1">unit barang aktif di katalog</span>
               </Card>
             </div>
 
             {/* Edit Store Modal */}
             <Dialog open={isEditOpen} onOpenChange={setIsEditOpen}>
-              <DialogContent className="max-w-md bg-white rounded-2xl">
-                <DialogHeader>
-                  <DialogTitle className="text-lg font-bold">Edit Profil Toko</DialogTitle>
-                  <DialogDescription className="font-light">Sesuaikan detail profil toko Anda.</DialogDescription>
+              <DialogContent className="max-w-md bg-white rounded-default border border-line p-6 text-manifest-ink">
+                <DialogHeader className="mb-3">
+                  <DialogTitle className="text-base font-bold font-display text-sea-deep">Edit Profil Toko</DialogTitle>
+                  <DialogDescription className="text-xs text-muted-foreground font-light mt-1">Sesuaikan detail identitas toko Anda.</DialogDescription>
                 </DialogHeader>
-                <form onSubmit={handleUpdate} className="space-y-4 mt-2">
-                  <div>
-                    <label className="block text-xs font-semibold text-zinc-500 uppercase tracking-wider mb-2">Nama Toko</label>
+                <form onSubmit={handleUpdate} className="space-y-4">
+                  <div className="space-y-1.5">
+                    <label className="block text-[10px] font-semibold text-muted-foreground uppercase tracking-wider">Nama Toko</label>
                     <Input
                       value={name}
                       onChange={(e) => setName(e.target.value)}
-                      className="rounded-lg border-zinc-200"
+                      className="rounded-lg border-line bg-white h-9 text-xs focus-visible:ring-1 focus-visible:ring-sea-mid"
                     />
                   </div>
-                  <div>
-                    <label className="block text-xs font-semibold text-zinc-500 uppercase tracking-wider mb-2">Deskripsi</label>
+                  <div className="space-y-1.5">
+                    <label className="block text-[10px] font-semibold text-muted-foreground uppercase tracking-wider">Deskripsi</label>
                     <textarea
                       value={description}
                       onChange={(e) => setDescription(e.target.value)}
                       rows={4}
-                      className="w-full rounded-lg border border-zinc-200 p-3 bg-white text-sm focus:outline-none focus:ring-1 focus:ring-zinc-950 focus:border-transparent transition"
+                      className="w-full rounded-lg border border-line p-3 bg-white text-xs focus:outline-none focus:ring-1 focus:ring-sea-mid transition"
                     />
                   </div>
-                  <div className="flex gap-3 justify-end pt-4 border-t border-zinc-100">
-                    <Button type="button" variant="outline" onClick={() => setIsEditOpen(false)} className="rounded-lg">
+                  <DialogFooter className="gap-2 sm:gap-0 pt-3 border-t border-line mt-4">
+                    <Button type="button" variant="ghost" onClick={() => setIsEditOpen(false)} className="rounded-lg text-xs h-9">
                       Batal
                     </Button>
-                    <Button type="submit" className="bg-zinc-950 hover:bg-zinc-800 text-white rounded-lg">
-                      Simpan Perubahan
+                    <Button 
+                      type="submit" 
+                      disabled={submitting}
+                      className="bg-cargo-amber hover:bg-cargo-amber/90 text-white rounded-lg px-4 h-9 text-xs font-bold border-0 shadow-sm"
+                    >
+                      {submitting ? "Menyimpan..." : "Simpan Perubahan"}
                     </Button>
-                  </div>
+                  </DialogFooter>
                 </form>
               </DialogContent>
             </Dialog>

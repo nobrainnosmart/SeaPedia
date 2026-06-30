@@ -64,25 +64,29 @@ export default function AdminTimeSimulationPage() {
     <ProtectedRoute allowedRole="ADMIN">
       <DashboardLayout>
         {loading ? (
-          <div className="text-center py-12 text-zinc-500 animate-pulse">Memuat simulasi waktu...</div>
+          <div className="flex items-center justify-center py-20">
+            <span className="text-xs text-muted-foreground animate-pulse font-mono">Memuat Waktu Jam Simulasi...</span>
+          </div>
         ) : (
-          <div className="max-w-3xl mx-auto space-y-8">
+          <div className="max-w-xl mx-auto space-y-6 text-manifest-ink">
+            {/* Header */}
             <div>
-              <h1 className="text-2xl font-bold text-zinc-950">Simulasi Waktu Sistem</h1>
-              <p className="text-zinc-500 text-sm font-light mt-0.5">Percepat waktu sistem untuk menguji batas waktu pengiriman (SLA) dan pesanan terlambat.</p>
+              <span className="text-xs uppercase tracking-wider font-semibold text-role-admin">Simulasi Waktu</span>
+              <h1 className="text-2xl font-bold font-display mt-0.5">Siklus Waktu Sistem</h1>
+              <p className="text-muted-foreground text-xs font-light mt-0.5">Percepat waktu sistem untuk menguji batas rute pengantaran (SLA) kurir cargo.</p>
             </div>
 
-            {/* Virtual Clock Display */}
-            <Card className="border border-zinc-200 bg-zinc-950 text-white rounded-3xl p-8 shadow-lg flex flex-col items-center justify-center text-center relative overflow-hidden">
-              {/* Background accent */}
-              <div className="absolute top-1/2 left-1/2 -translate-x-1/2 -translate-y-1/2 w-64 h-64 bg-indigo-500/10 blur-[80px] rounded-full" />
+            {/* Virtual Clock Display (Premium Dark Container) */}
+            <Card className="border border-line bg-manifest-ink text-white rounded-default p-8 shadow-card flex flex-col items-center justify-center text-center relative overflow-hidden">
+              {/* Background ambient accent */}
+              <div className="absolute top-1/2 left-1/2 -translate-x-1/2 -translate-y-1/2 w-64 h-64 bg-role-admin/15 blur-[60px] rounded-full pointer-events-none" />
               
-              <div className="relative z-10 space-y-4">
-                <p className="text-zinc-400 text-xs font-semibold uppercase tracking-wider">Waktu Sistem Virtual</p>
-                <div className="text-4xl md:text-5xl font-extrabold tracking-tight font-mono text-indigo-400">
-                  {new Date(data.virtualTime).toLocaleTimeString("id-ID")}
+              <div className="relative z-10 space-y-3">
+                <span className="text-[10px] text-white/50 font-semibold uppercase tracking-wider block">Waktu Sistem Virtual</span>
+                <div className="text-4xl md:text-5xl font-extrabold tracking-tight font-mono text-role-admin select-all">
+                  {new Date(data.virtualTime).toLocaleTimeString("id-ID", { hour: "2-digit", minute: "2-digit", second: "2-digit" })}
                 </div>
-                <div className="text-sm font-light text-zinc-300">
+                <div className="text-xs font-light text-white/70">
                   {new Date(data.virtualTime).toLocaleDateString("id-ID", {
                     weekday: "long",
                     year: "numeric",
@@ -90,75 +94,75 @@ export default function AdminTimeSimulationPage() {
                     day: "numeric",
                   })}
                 </div>
-                <div className="inline-flex items-center gap-1.5 rounded-full bg-indigo-500/20 px-3 py-1 text-xs font-medium text-indigo-300 ring-1 ring-inset ring-indigo-500/30">
+                <div className="inline-flex items-center gap-1.5 rounded-full bg-role-admin/25 px-3 py-1 text-[10px] font-bold text-role-admin border border-role-admin/20 mt-2">
                   <Clock className="h-3.5 w-3.5" />
-                  {formatOffset(data.offsetMs)}
+                  <span>{formatOffset(data.offsetMs)}</span>
                 </div>
               </div>
             </Card>
 
             {/* Controls */}
-            <Card className="border border-zinc-200 bg-white rounded-3xl p-6 shadow-sm space-y-6">
-              <h2 className="text-lg font-bold text-zinc-950 flex items-center gap-2">
-                <Zap className="h-5 w-5 text-indigo-500" />
-                Percepat Waktu Sistem
+            <Card className="border border-line bg-white rounded-default p-5 shadow-card space-y-4">
+              <h2 className="text-xs font-bold font-display uppercase tracking-wider text-muted-foreground flex items-center gap-1.5 border-b border-line pb-2.5">
+                <Zap className="h-4.5 w-4.5 text-cargo-amber shrink-0" />
+                Percepat Jam Waktu Sistem
               </h2>
 
-              <div className="grid grid-cols-2 md:grid-cols-4 gap-4">
+              <div className="grid grid-cols-2 sm:grid-cols-4 gap-3">
                 <Button
                   onClick={() => handleSimulate({ hours: 1 })}
                   disabled={processing}
                   variant="outline"
-                  className="rounded-xl py-6 border-zinc-200 hover:bg-zinc-50 flex flex-col h-auto text-center"
+                  className="rounded-lg py-4 border-line hover:bg-sea-foam/40 flex flex-col h-auto text-center justify-center cursor-pointer"
                 >
-                  <Play className="h-5 w-5 text-zinc-400 mb-1 rotate-0" />
-                  <span className="font-bold">+1 Jam</span>
+                  <Play className="h-4.5 w-4.5 text-muted-foreground/60 mb-1" />
+                  <span className="text-xs font-bold text-manifest-ink">+1 Jam</span>
                 </Button>
 
                 <Button
                   onClick={() => handleSimulate({ hours: 6 })}
                   disabled={processing}
                   variant="outline"
-                  className="rounded-xl py-6 border-zinc-200 hover:bg-zinc-50 flex flex-col h-auto text-center"
+                  className="rounded-lg py-4 border-line hover:bg-sea-foam/40 flex flex-col h-auto text-center justify-center cursor-pointer"
                 >
-                  <Play className="h-5 w-5 text-zinc-400 mb-1" />
-                  <span className="font-bold">+6 Jam</span>
+                  <Play className="h-4.5 w-4.5 text-muted-foreground/60 mb-1" />
+                  <span className="text-xs font-bold text-manifest-ink">+6 Jam</span>
                 </Button>
 
                 <Button
                   onClick={() => handleSimulate({ days: 1 })}
                   disabled={processing}
                   variant="outline"
-                  className="rounded-xl py-6 border-zinc-200 hover:bg-zinc-50 flex flex-col h-auto text-center"
+                  className="rounded-lg py-4 border-line hover:bg-sea-foam/40 flex flex-col h-auto text-center justify-center cursor-pointer"
                 >
-                  <Play className="h-5 w-5 text-zinc-400 mb-1" />
-                  <span className="font-bold">+1 Hari</span>
+                  <Play className="h-4.5 w-4.5 text-muted-foreground/60 mb-1" />
+                  <span className="text-xs font-bold text-manifest-ink">+1 Hari</span>
                 </Button>
 
                 <Button
                   onClick={() => handleSimulate({ days: 3 })}
                   disabled={processing}
                   variant="outline"
-                  className="rounded-xl py-6 border-zinc-200 hover:bg-zinc-50 flex flex-col h-auto text-center"
+                  className="rounded-lg py-4 border-line hover:bg-sea-foam/40 flex flex-col h-auto text-center justify-center cursor-pointer"
                 >
-                  <Play className="h-5 w-5 text-zinc-400 mb-1" />
-                  <span className="font-bold">+3 Hari</span>
+                  <Play className="h-4.5 w-4.5 text-muted-foreground/60 mb-1" />
+                  <span className="text-xs font-bold text-manifest-ink">+3 Hari</span>
                 </Button>
               </div>
 
-              <div className="border-t border-zinc-100 pt-4 flex flex-col md:flex-row justify-between items-center gap-4">
-                <div className="text-sm text-zinc-500 font-light flex items-center gap-2">
-                  <Calendar className="h-4 w-4 text-zinc-400" />
+              <div className="border-t border-line pt-4 flex flex-col sm:flex-row justify-between items-center gap-3">
+                <div className="text-[10px] text-muted-foreground font-light flex items-center gap-1.5 font-mono">
+                  <Calendar className="h-4 w-4 text-muted-foreground/60 shrink-0" />
                   Waktu Nyata: {new Date(data.realTime).toLocaleString("id-ID")}
                 </div>
 
                 <Button
                   onClick={() => handleSimulate({ reset: true })}
                   disabled={processing || data.offsetMs === 0}
-                  className="bg-red-50 text-red-600 hover:bg-red-100 border border-red-100 rounded-xl px-4 py-2 font-semibold flex items-center gap-1.5"
+                  className="bg-tide-coral/10 hover:bg-tide-coral/15 border border-tide-coral/25 text-tide-coral rounded-lg px-4 h-8 text-[11px] font-bold flex items-center gap-1.5 cursor-pointer shadow-sm"
                 >
-                  <RefreshCw className="h-4 w-4" />
-                  Reset ke Waktu Nyata
+                  <RefreshCw className="h-3.5 w-3.5" />
+                  <span>Reset Waktu Nyata</span>
                 </Button>
               </div>
             </Card>

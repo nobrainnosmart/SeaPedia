@@ -2,11 +2,13 @@
 
 import { useEffect, useState } from "react";
 import { toast } from "sonner";
-import { Truck, Store, User, MapPin, Ticket } from "lucide-react";
+import { Truck, Store, User, MapPin } from "lucide-react";
 import { Card } from "@/components/ui/card";
 import ProtectedRoute from "@/components/auth/ProtectedRoute";
 import DashboardLayout from "@/components/layout/DashboardLayout";
 import api from "@/lib/api";
+import Price from "@/components/ui/Price";
+import StatusBadge from "@/components/ui/StatusBadge";
 
 export default function AdminDeliveryJobsPage() {
   const [jobs, setJobs] = useState<any[]>([]);
@@ -27,107 +29,98 @@ export default function AdminDeliveryJobsPage() {
     }
   };
 
-  const getStatusBadge = (status: string) => {
-    switch (status) {
-      case "SEDANG_DIKEMAS":
-        return "bg-amber-50 text-amber-700 ring-amber-600/20";
-      case "MENUNGGU_PENGIRIM":
-        return "bg-purple-50 text-purple-700 ring-purple-600/20";
-      case "SEDANG_DIKIRIM":
-        return "bg-blue-50 text-blue-700 ring-blue-600/20";
-      case "PESANAN_SELESAI":
-        return "bg-green-50 text-green-700 ring-green-600/20";
-      case "DIKEMBALIKAN":
-        return "bg-red-50 text-red-700 ring-red-600/20";
-      default:
-        return "bg-zinc-50 text-zinc-700 ring-zinc-600/20";
-    }
-  };
-
   return (
     <ProtectedRoute allowedRole="ADMIN">
       <DashboardLayout>
-        {loading ? (
-          <div className="text-center py-12 text-zinc-500 animate-pulse">Memuat data pengiriman...</div>
-        ) : (
-          <div className="space-y-6">
+        <div className="space-y-6 text-manifest-ink">
+          <div className="flex flex-col sm:flex-row sm:items-center sm:justify-between gap-4 border-b border-line pb-4">
             <div>
-              <h1 className="text-2xl font-bold text-zinc-950">Semua Pekerjaan Pengiriman</h1>
-              <p className="text-zinc-500 text-sm font-light mt-0.5">Pantau status, kurir, dan biaya dari seluruh pengiriman yang sedang berjalan di platform.</p>
+              <span className="text-xs uppercase tracking-wider font-semibold text-role-admin">Manajemen Sistem</span>
+              <h1 className="text-2xl font-bold font-display mt-0.5">Semua Pekerjaan Pengiriman</h1>
+              <p className="text-muted-foreground text-xs font-light mt-0.5">
+                {loading ? "Memuat..." : `Daftar ${jobs.length} penugasan kurir kargo aktif.`}
+              </p>
             </div>
-
-            {jobs.length === 0 ? (
-              <div className="text-center py-20 bg-white border border-zinc-200 rounded-3xl">
-                <Truck className="mx-auto h-12 w-12 text-zinc-300 mb-4" />
-                <p className="text-zinc-400 font-light">Belum ada aktivitas transaksi pengiriman di platform.</p>
-              </div>
-            ) : (
-              <div className="bg-white border border-zinc-200 rounded-3xl overflow-hidden shadow-sm">
-                <div className="overflow-x-auto">
-                  <table className="w-full text-left border-collapse">
-                    <thead>
-                      <tr className="border-b border-zinc-200 bg-zinc-50/70 text-xs font-semibold text-zinc-500 uppercase tracking-wider">
-                        <th className="px-6 py-4">ID Pesanan</th>
-                        <th className="px-6 py-4">Pembeli / Toko</th>
-                        <th className="px-6 py-4">Kurir Ditugaskan</th>
-                        <th className="px-6 py-4">Metode / Tarif</th>
-                        <th className="px-6 py-4">Status Pengiriman</th>
-                        <th className="px-6 py-4">Tanggal Dibuat</th>
-                      </tr>
-                    </thead>
-                    <tbody className="divide-y divide-zinc-150 text-sm text-zinc-700">
-                      {jobs.map((job) => (
-                        <tr key={job.id} className="hover:bg-zinc-50/50 transition-colors">
-                          <td className="px-6 py-4 font-mono font-bold text-zinc-900">#{job.id.slice(-8).toUpperCase()}</td>
-                          <td className="px-6 py-4">
-                            <div className="space-y-0.5">
-                              <p className="font-semibold text-zinc-800 flex items-center gap-1">
-                                <User className="h-3.5 w-3.5 text-zinc-400" />
-                                {job.buyer?.username}
-                              </p>
-                              <p className="text-xs text-zinc-500 flex items-center gap-1 font-light">
-                                <Store className="h-3.5 w-3.5 text-zinc-400" />
-                                {job.store?.name}
-                              </p>
-                            </div>
-                          </td>
-                          <td className="px-6 py-4">
-                            {job.driver ? (
-                              <p className="font-medium text-indigo-600 flex items-center gap-1">
-                                <User className="h-3.5 w-3.5 text-indigo-400" />
-                                {job.driver.username}
-                              </p>
-                            ) : (
-                              job.status !== "SEDANG_DIKEMAS" && job.status !== "DIKEMBALIKAN" ? (
-                                <span className="text-xs text-zinc-500 font-light italic">Mencari kurir...</span>
-                              ) : (
-                                <span className="text-xs text-zinc-400 font-light">-</span>
-                              )
-                            )}
-                          </td>
-                          <td className="px-6 py-4">
-                            <div className="space-y-0.5">
-                              <p className="font-medium text-zinc-800">{job.deliveryMethod}</p>
-                              <p className="text-xs text-emerald-600 font-bold">Rp {job.deliveryFee.toLocaleString("id-ID")}</p>
-                            </div>
-                          </td>
-                          <td className="px-6 py-4">
-                            <span className={`inline-flex items-center rounded-md px-2 py-0.5 text-xs font-semibold ring-1 ring-inset ${getStatusBadge(job.status)}`}>
-                              {job.status.replace("_", " ")}
-                            </span>
-                          </td>
-                          <td className="px-6 py-4 font-light text-zinc-500">
-                            {new Date(job.createdAt).toLocaleString("id-ID")}
-                          </td>
-                        </tr>
-                      ))}
-                    </tbody>
-                  </table>
-                </div>
-              </div>
-            )}
           </div>
-        )}
+
+          {loading ? (
+            <div className="space-y-3">
+              {[...Array(5)].map((_, i) => (
+                <div key={i} className="h-14 bg-sea-foam/50 rounded-lg animate-pulse border border-line" />
+              ))}
+            </div>
+          ) : jobs.length === 0 ? (
+            <div className="text-center py-20 bg-white border border-line rounded-default shadow-card flex flex-col items-center">
+              <div className="p-4 rounded-full bg-sea-foam text-sea-mid mb-4 border border-line">
+                <Truck className="h-8 w-8 stroke-1" />
+              </div>
+              <h2 className="text-base font-bold font-display">Tidak Ada Tugas Pengiriman</h2>
+              <p className="text-muted-foreground text-xs font-light mt-1">Belum ada tugas pengantaran cargo yang tercatat di platform.</p>
+            </div>
+          ) : (
+            <div className="bg-white border border-line rounded-default overflow-hidden shadow-card">
+              <div className="overflow-x-auto">
+                <table className="w-full text-left border-collapse">
+                  <thead>
+                    <tr className="border-b border-line bg-sea-foam/15 text-[10px] font-semibold text-muted-foreground uppercase tracking-wider">
+                      <th className="px-5 py-3.5 font-medium">ID Pesanan</th>
+                      <th className="px-5 py-3.5 font-medium">Mitra Toko & Penerima</th>
+                      <th className="px-5 py-3.5 font-medium">Kurir Ditugaskan</th>
+                      <th className="px-5 py-3.5 font-medium">Metode / Ongkir</th>
+                      <th className="px-5 py-3.5 font-medium">Status Pengiriman</th>
+                      <th className="px-5 py-3.5 font-medium">Tanggal Tugas</th>
+                    </tr>
+                  </thead>
+                  <tbody className="divide-y divide-line text-xs text-manifest-ink">
+                    {jobs.map((job) => (
+                      <tr key={job.id} className="hover:bg-sea-foam/5 transition-colors">
+                        <td className="px-5 py-3.5 font-mono font-bold">#{job.id.slice(-8).toUpperCase()}</td>
+                        <td className="px-5 py-3.5">
+                          <div className="space-y-1">
+                            <p className="font-bold flex items-center gap-1">
+                              <Store className="h-3.5 w-3.5 text-muted-foreground shrink-0" />
+                              {job.store?.name}
+                            </p>
+                            <p className="text-[10px] text-muted-foreground flex items-center gap-1 font-light">
+                              <User className="h-3.5 w-3.5 text-muted-foreground/50 shrink-0" />
+                              Kirim ke: {job.deliveryAddress?.recipientName}
+                            </p>
+                          </div>
+                        </td>
+                        <td className="px-5 py-3.5">
+                          {job.driver ? (
+                            <p className="font-bold text-sea-mid flex items-center gap-1">
+                              <User className="h-3.5 w-3.5 text-sea-mid shrink-0" />
+                              {job.driver.username}
+                            </p>
+                          ) : (
+                            job.status !== "SEDANG_DIKEMAS" && job.status !== "DIKEMBALIKAN" ? (
+                              <span className="text-[10px] text-cargo-amber font-semibold italic">Mencari kurir...</span>
+                            ) : (
+                              <span className="text-muted-foreground/40 font-light">-</span>
+                            )
+                          )}
+                        </td>
+                        <td className="px-5 py-3.5">
+                          <div className="space-y-0.5">
+                            <p className="font-semibold text-manifest-ink">{job.deliveryMethod}</p>
+                            <Price amount={job.deliveryFee} size="sm" className="font-bold text-role-seller" />
+                          </div>
+                        </td>
+                        <td className="px-5 py-3.5">
+                          <StatusBadge status={job.status} />
+                        </td>
+                        <td className="px-5 py-3.5 font-mono text-[11px] text-muted-foreground tabular-nums">
+                          {new Date(job.createdAt).toLocaleDateString("id-ID", { day: "2-digit", month: "short", year: "numeric", hour: "2-digit", minute: "2-digit" })}
+                        </td>
+                      </tr>
+                    ))}
+                  </tbody>
+                </table>
+              </div>
+            </div>
+          )}
+        </div>
       </DashboardLayout>
     </ProtectedRoute>
   );

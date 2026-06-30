@@ -7,12 +7,13 @@ import { useForm } from "react-hook-form";
 import { zodResolver } from "@hookform/resolvers/zod";
 import * as z from "zod";
 import { toast } from "sonner";
-import { KeyRound, Mail, User, ShoppingBag } from "lucide-react";
+import { KeyRound, Mail, User, ShoppingBag, Store, Truck, AlertCircle, Check, Loader2 } from "lucide-react";
 import { Button } from "@/components/ui/button";
 import { Input } from "@/components/ui/input";
 import { Card, CardHeader, CardTitle, CardDescription, CardContent, CardFooter } from "@/components/ui/card";
 import { setAuth } from "@/lib/auth";
 import api from "@/lib/api";
+import { cn } from "@/lib/utils";
 
 const registerSchema = z.object({
   username: z.string().min(3, { message: "Username minimal 3 karakter" }).max(30),
@@ -30,6 +31,7 @@ type RegisterForm = z.infer<typeof registerSchema>;
 export default function RegisterPage() {
   const router = useRouter();
   const [loading, setLoading] = useState(false);
+  const [serverError, setServerError] = useState<string | null>(null);
 
   const {
     register,
@@ -46,16 +48,17 @@ export default function RegisterPage() {
 
   const watchedRoles = watch("roles") || [];
 
-  const handleRoleChange = (role: "BUYER" | "SELLER" | "DRIVER", checked: boolean) => {
-    if (checked) {
-      setValue("roles", [...watchedRoles, role]);
-    } else {
+  const handleRoleToggle = (role: "BUYER" | "SELLER" | "DRIVER") => {
+    if (watchedRoles.includes(role)) {
       setValue("roles", watchedRoles.filter((r) => r !== role));
+    } else {
+      setValue("roles", [...watchedRoles, role]);
     }
   };
 
   const onSubmit = async (data: RegisterForm) => {
     setLoading(true);
+    setServerError(null);
     try {
       // 1. Register User
       await api.post("/auth/register", {
@@ -85,133 +88,239 @@ export default function RegisterPage() {
       }
       router.refresh();
     } catch (err: any) {
-      toast.error(err.response?.data?.error || "Gagal melakukan registrasi.");
+      const errMsg = err.response?.data?.error || "Gagal melakukan registrasi.";
+      setServerError(errMsg);
+      toast.error(errMsg);
     } finally {
       setLoading(false);
     }
   };
 
   return (
-    <div className="flex flex-1 items-center justify-center py-16 px-4 bg-zinc-50">
-      <Card className="w-full max-w-md border border-zinc-200 bg-white rounded-2xl shadow-sm">
-        <CardHeader className="text-center pb-4">
-          <Link href="/" className="inline-flex items-center gap-2 text-2xl font-bold tracking-tight text-zinc-950 mb-3 justify-center">
-            <ShoppingBag className="h-6 w-6 text-zinc-900" />
-            <span>SEAPEDIA</span>
+    <div 
+      className="flex flex-1 items-center justify-center py-16 px-4 bg-sea-foam"
+      style={{
+        backgroundImage: "repeating-linear-gradient(45deg, rgba(11,61,68,0.01) 0px, rgba(11,61,68,0.01) 2px, transparent 2px, transparent 12px)",
+      }}
+    >
+      <Card className="w-full max-w-md border border-line bg-white rounded-default shadow-card">
+        <CardHeader className="text-center pb-4 space-y-1">
+          <Link href="/" className="inline-flex items-center gap-2 mb-2 justify-center">
+            <svg width="28" height="28" viewBox="0 0 28 28" fill="none" xmlns="http://www.w3.org/2000/svg" className="shrink-0">
+              <rect x="2" y="6" width="16" height="12" rx="2" fill="#E8923C" />
+              <rect x="10" y="10" width="16" height="12" rx="2" fill="#0B3D44" stroke="#D7E4E2" strokeWidth="2" />
+            </svg>
+            <span className="text-xl font-display font-bold tracking-tight text-sea-deep">SEAPEDIA</span>
           </Link>
-          <CardTitle className="text-xl font-bold text-zinc-900">Buat Akun Baru</CardTitle>
-          <CardDescription className="text-zinc-500 font-light">Mulai langkah Anda sebagai Pembeli, Penjual, atau Pengemudi.</CardDescription>
+          <CardTitle className="text-lg font-bold text-manifest-ink font-display">Buat Akun Baru</CardTitle>
+          <CardDescription className="text-muted-foreground text-xs font-light">Mulai langkah Anda sebagai Pembeli, Penjual, atau Driver.</CardDescription>
         </CardHeader>
 
         <form onSubmit={handleSubmit(onSubmit)}>
           <CardContent className="space-y-4">
-            <div>
-              <label className="block text-xs font-semibold text-zinc-500 uppercase tracking-wider mb-2">
+            {serverError && (
+              <div className="p-3 bg-tide-coral/10 border border-tide-coral/20 rounded-lg text-xs text-tide-coral flex items-center gap-2 animate-in fade-in slide-in-from-top-1 duration-200">
+                <AlertCircle className="h-4 w-4 shrink-0" />
+                <span>{serverError}</span>
+              </div>
+            )}
+
+            <div className="space-y-1.5">
+              <label className="block text-[10px] font-semibold text-muted-foreground uppercase tracking-wider">
                 Username
               </label>
               <div className="relative">
-                <User className="absolute left-3 top-1/2 -translate-y-1/2 h-4.5 w-4.5 text-zinc-400" />
+                <User className="absolute left-3 top-1/2 -translate-y-1/2 h-4 w-4 text-muted-foreground" />
                 <Input
                   type="text"
                   placeholder="john_doe"
                   {...register("username")}
-                  className="pl-10 rounded-lg border-zinc-200 bg-white"
+                  className="pl-9 rounded-lg border-line bg-white h-9 text-xs focus-visible:ring-1 focus-visible:ring-sea-mid focus-visible:border-transparent"
                 />
               </div>
               {errors.username && (
-                <p className="mt-1.5 text-xs text-red-600">{errors.username.message}</p>
+                <p className="mt-1 text-xs text-tide-coral">{errors.username.message}</p>
               )}
             </div>
 
-            <div>
-              <label className="block text-xs font-semibold text-zinc-500 uppercase tracking-wider mb-2">
+            <div className="space-y-1.5">
+              <label className="block text-[10px] font-semibold text-muted-foreground uppercase tracking-wider">
                 Alamat Email
               </label>
               <div className="relative">
-                <Mail className="absolute left-3 top-1/2 -translate-y-1/2 h-4.5 w-4.5 text-zinc-400" />
+                <Mail className="absolute left-3 top-1/2 -translate-y-1/2 h-4 w-4 text-muted-foreground" />
                 <Input
                   type="email"
                   placeholder="name@example.com"
                   {...register("email")}
-                  className="pl-10 rounded-lg border-zinc-200 bg-white"
+                  className="pl-9 rounded-lg border-line bg-white h-9 text-xs focus-visible:ring-1 focus-visible:ring-sea-mid focus-visible:border-transparent"
                 />
               </div>
               {errors.email && (
-                <p className="mt-1.5 text-xs text-red-600">{errors.email.message}</p>
+                <p className="mt-1 text-xs text-tide-coral">{errors.email.message}</p>
               )}
             </div>
 
-            <div>
-              <label className="block text-xs font-semibold text-zinc-500 uppercase tracking-wider mb-2">
+            <div className="space-y-1.5">
+              <label className="block text-[10px] font-semibold text-muted-foreground uppercase tracking-wider">
                 Kata Sandi
               </label>
               <div className="relative">
-                <KeyRound className="absolute left-3 top-1/2 -translate-y-1/2 h-4.5 w-4.5 text-zinc-400" />
+                <KeyRound className="absolute left-3 top-1/2 -translate-y-1/2 h-4 w-4 text-muted-foreground" />
                 <Input
                   type="password"
                   placeholder="••••••••"
                   {...register("password")}
-                  className="pl-10 rounded-lg border-zinc-200 bg-white"
+                  className="pl-9 rounded-lg border-line bg-white h-9 text-xs focus-visible:ring-1 focus-visible:ring-sea-mid focus-visible:border-transparent"
                 />
               </div>
               {errors.password && (
-                <p className="mt-1.5 text-xs text-red-600">{errors.password.message}</p>
+                <p className="mt-1 text-xs text-tide-coral">{errors.password.message}</p>
               )}
             </div>
 
-            <div>
-              <label className="block text-xs font-semibold text-zinc-500 uppercase tracking-wider mb-2">
+            <div className="space-y-1.5">
+              <label className="block text-[10px] font-semibold text-muted-foreground uppercase tracking-wider">
                 Konfirmasi Kata Sandi
               </label>
               <div className="relative">
-                <KeyRound className="absolute left-3 top-1/2 -translate-y-1/2 h-4.5 w-4.5 text-zinc-400" />
+                <KeyRound className="absolute left-3 top-1/2 -translate-y-1/2 h-4 w-4 text-muted-foreground" />
                 <Input
                   type="password"
                   placeholder="••••••••"
                   {...register("confirmPassword")}
-                  className="pl-10 rounded-lg border-zinc-200 bg-white"
+                  className="pl-9 rounded-lg border-line bg-white h-9 text-xs focus-visible:ring-1 focus-visible:ring-sea-mid focus-visible:border-transparent"
                 />
               </div>
               {errors.confirmPassword && (
-                <p className="mt-1.5 text-xs text-red-600">{errors.confirmPassword.message}</p>
+                <p className="mt-1 text-xs text-tide-coral">{errors.confirmPassword.message}</p>
               )}
             </div>
 
-            <div>
-              <label className="block text-xs font-semibold text-zinc-500 uppercase tracking-wider mb-2">
+            <div className="space-y-2">
+              <label className="block text-[10px] font-semibold text-muted-foreground uppercase tracking-wider">
                 Pilih Peran Akun (Pilih minimal 1)
               </label>
-              <div className="space-y-2 mt-2">
-                {["BUYER", "SELLER", "DRIVER"].map((role) => (
-                  <label key={role} className="flex items-center space-x-3 cursor-pointer text-sm font-medium text-zinc-700 bg-zinc-50/50 p-2.5 rounded-lg border border-zinc-150 hover:bg-zinc-50 transition-colors">
-                    <input
-                      type="checkbox"
-                      value={role}
-                      checked={watchedRoles.includes(role as any)}
-                      onChange={(e) => handleRoleChange(role as any, e.target.checked)}
-                      className="h-4 w-4 rounded border-zinc-300 text-zinc-950 focus:ring-zinc-950 cursor-pointer"
-                    />
-                    <span className="capitalize">{role.toLowerCase()}</span>
-                  </label>
-                ))}
+              
+              <div className="grid grid-cols-1 gap-2.5 mt-1.5">
+                {/* BUYER CARD */}
+                <div
+                  onClick={() => handleRoleToggle("BUYER")}
+                  className={cn(
+                    "border rounded-lg p-3 flex items-center justify-between cursor-pointer transition relative hover:bg-sea-foam/10",
+                    watchedRoles.includes("BUYER") 
+                      ? "border-role-buyer bg-role-buyer/5" 
+                      : "border-line bg-white"
+                  )}
+                >
+                  <div className="flex items-center gap-3">
+                    <div className={cn(
+                      "h-8 w-8 rounded flex items-center justify-center border transition",
+                      watchedRoles.includes("BUYER") 
+                        ? "bg-role-buyer text-white border-role-buyer" 
+                        : "bg-sea-foam text-muted-foreground border-line"
+                    )}>
+                      <ShoppingBag className="h-4.5 w-4.5" />
+                    </div>
+                    <div>
+                      <h5 className="text-xs font-bold text-manifest-ink">Pembeli (Buyer)</h5>
+                      <p className="text-[9px] text-muted-foreground font-light">Belanja kebutuhan cargo & warung</p>
+                    </div>
+                  </div>
+                  {watchedRoles.includes("BUYER") && (
+                    <span className="h-4.5 w-4.5 rounded-full bg-role-buyer text-white flex items-center justify-center">
+                      <Check className="h-3 w-3" />
+                    </span>
+                  )}
+                </div>
+
+                {/* SELLER CARD */}
+                <div
+                  onClick={() => handleRoleToggle("SELLER")}
+                  className={cn(
+                    "border rounded-lg p-3 flex items-center justify-between cursor-pointer transition relative hover:bg-role-seller/5",
+                    watchedRoles.includes("SELLER") 
+                      ? "border-role-seller bg-role-seller/5" 
+                      : "border-line bg-white"
+                  )}
+                >
+                  <div className="flex items-center gap-3">
+                    <div className={cn(
+                      "h-8 w-8 rounded flex items-center justify-center border transition",
+                      watchedRoles.includes("SELLER") 
+                        ? "bg-role-seller text-white border-role-seller" 
+                        : "bg-sea-foam text-muted-foreground border-line"
+                    )}>
+                      <Store className="h-4.5 w-4.5" />
+                    </div>
+                    <div>
+                      <h5 className="text-xs font-bold text-manifest-ink">Penjual (Seller)</h5>
+                      <p className="text-[9px] text-muted-foreground font-light">Buka warung, kelola inventori & stok</p>
+                    </div>
+                  </div>
+                  {watchedRoles.includes("SELLER") && (
+                    <span className="h-4.5 w-4.5 rounded-full bg-role-seller text-white flex items-center justify-center">
+                      <Check className="h-3 w-3" />
+                    </span>
+                  )}
+                </div>
+
+                {/* DRIVER CARD */}
+                <div
+                  onClick={() => handleRoleToggle("DRIVER")}
+                  className={cn(
+                    "border rounded-lg p-3 flex items-center justify-between cursor-pointer transition relative hover:bg-role-driver/5",
+                    watchedRoles.includes("DRIVER") 
+                      ? "border-role-driver bg-role-driver/5" 
+                      : "border-line bg-white"
+                  )}
+                >
+                  <div className="flex items-center gap-3">
+                    <div className={cn(
+                      "h-8 w-8 rounded flex items-center justify-center border transition",
+                      watchedRoles.includes("DRIVER") 
+                        ? "bg-role-driver text-white border-role-driver" 
+                        : "bg-sea-foam text-muted-foreground border-line"
+                    )}>
+                      <Truck className="h-4.5 w-4.5" />
+                    </div>
+                    <div>
+                      <h5 className="text-xs font-bold text-manifest-ink">Driver</h5>
+                      <p className="text-[9px] text-muted-foreground font-light">Ambil pesanan & kirim kargo</p>
+                    </div>
+                  </div>
+                  {watchedRoles.includes("DRIVER") && (
+                    <span className="h-4.5 w-4.5 rounded-full bg-role-driver text-white flex items-center justify-center">
+                      <Check className="h-3 w-3" />
+                    </span>
+                  )}
+                </div>
               </div>
+
               {errors.roles && (
-                <p className="mt-1.5 text-xs text-red-600">{errors.roles.message}</p>
+                <p className="mt-1 text-xs text-tide-coral">{errors.roles.message}</p>
               )}
             </div>
           </CardContent>
 
-          <CardFooter className="flex flex-col gap-4 border-t border-zinc-100 pt-6 mt-4">
+          <CardFooter className="flex flex-col gap-4 border-t border-line pt-6 mt-4">
             <Button
               type="submit"
               disabled={loading}
-              className="w-full bg-zinc-950 hover:bg-zinc-800 text-white rounded-lg"
+              className="w-full bg-cargo-amber hover:bg-cargo-amber/90 text-white rounded-lg h-10 text-xs font-bold border-0 shadow-sm flex items-center justify-center gap-2 cursor-pointer"
             >
-              {loading ? "Mendaftar..." : "Daftar"}
+              {loading ? (
+                <>
+                  <Loader2 className="h-4 w-4 animate-spin" />
+                  <span>Mendaftarkan...</span>
+                </>
+              ) : (
+                <span>Daftar</span>
+              )}
             </Button>
-            <p className="text-sm text-center text-zinc-500 font-light">
-              Sudah punya akun?{" "}
-              <Link href="/auth/login" className="text-zinc-950 font-semibold hover:underline">
+            <p className="text-xs text-center text-muted-foreground font-light">
+              Sudah memiliki akun?{" "}
+              <Link href="/auth/login" className="text-sea-mid font-semibold hover:underline">
                 Masuk Disini
               </Link>
             </p>

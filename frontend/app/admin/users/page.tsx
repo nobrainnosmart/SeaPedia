@@ -3,17 +3,11 @@
 import { useEffect, useState } from "react";
 import { toast } from "sonner";
 import { Users, Search } from "lucide-react";
-import { Card } from "@/components/ui/card";
 import ProtectedRoute from "@/components/auth/ProtectedRoute";
 import DashboardLayout from "@/components/layout/DashboardLayout";
 import api from "@/lib/api";
-
-const ROLE_COLORS: Record<string, string> = {
-  BUYER: "bg-blue-50 text-blue-700 ring-blue-600/20",
-  SELLER: "bg-emerald-50 text-emerald-700 ring-emerald-600/20",
-  DRIVER: "bg-amber-50 text-amber-700 ring-amber-600/20",
-  ADMIN: "bg-red-50 text-red-700 ring-red-600/20",
-};
+import RoleBadge from "@/components/ui/RoleBadge";
+import Price from "@/components/ui/Price";
 
 export default function AdminUsersPage() {
   const [users, setUsers] = useState<any[]>([]);
@@ -35,68 +29,69 @@ export default function AdminUsersPage() {
   return (
     <ProtectedRoute allowedRole="ADMIN">
       <DashboardLayout>
-        <div className="space-y-6">
-          <div className="flex flex-col md:flex-row md:items-center md:justify-between gap-4">
+        <div className="space-y-6 text-manifest-ink">
+          <div className="flex flex-col sm:flex-row sm:items-center sm:justify-between gap-4 border-b border-line pb-4">
             <div>
-              <h1 className="text-2xl font-bold text-zinc-950">Manajemen Pengguna</h1>
-              <p className="text-zinc-500 text-sm font-light mt-0.5">
-                {loading ? "Memuat..." : `${users.length} pengguna terdaftar`}
+              <span className="text-xs uppercase tracking-wider font-semibold text-role-admin">Manajemen Sistem</span>
+              <h1 className="text-2xl font-bold font-display mt-0.5">Daftar Pengguna</h1>
+              <p className="text-muted-foreground text-xs font-light mt-0.5">
+                {loading ? "Memuat..." : `Daftar ${users.length} akun pengguna yang terdaftar.`}
               </p>
             </div>
-            <div className="relative w-full md:w-72">
-              <Search className="absolute left-3 top-1/2 -translate-y-1/2 h-4 w-4 text-zinc-400" />
+            <div className="relative w-full sm:w-72 shrink-0">
+              <Search className="absolute left-3 top-1/2 -translate-y-1/2 h-4 w-4 text-muted-foreground" />
               <input
                 type="text"
                 placeholder="Cari username atau email..."
                 value={search}
                 onChange={e => setSearch(e.target.value)}
-                className="w-full pl-9 pr-4 py-2.5 border border-zinc-200 rounded-xl text-sm bg-white focus:outline-none focus:ring-2 focus:ring-indigo-500/20 focus:border-indigo-400 transition"
+                className="w-full pl-9 pr-4 py-2 border border-line rounded-lg text-xs bg-white focus:outline-none focus:ring-1 focus:ring-role-admin/30 focus:border-role-admin transition"
               />
             </div>
           </div>
 
           {loading ? (
             <div className="space-y-3">
-              {[...Array(5)].map((_, i) => <div key={i} className="h-16 bg-zinc-100 rounded-2xl animate-pulse" />)}
+              {[...Array(5)].map((_, i) => (
+                <div key={i} className="h-14 bg-sea-foam/50 rounded-lg animate-pulse border border-line" />
+              ))}
             </div>
           ) : (
-            <div className="bg-white border border-zinc-200 rounded-3xl overflow-hidden shadow-sm">
+            <div className="bg-white border border-line rounded-default overflow-hidden shadow-card">
               <div className="overflow-x-auto">
                 <table className="w-full text-left border-collapse">
                   <thead>
-                    <tr className="border-b border-zinc-200 bg-zinc-50/70 text-xs font-semibold text-zinc-500 uppercase tracking-wider">
-                      <th className="px-6 py-4">Pengguna</th>
-                      <th className="px-6 py-4">Email</th>
-                      <th className="px-6 py-4">Peran</th>
-                      <th className="px-6 py-4">Saldo Dompet</th>
-                      <th className="px-6 py-4">Bergabung</th>
+                    <tr className="border-b border-line bg-sea-foam/15 text-[10px] font-semibold text-muted-foreground uppercase tracking-wider">
+                      <th className="px-5 py-3.5 font-medium">Username</th>
+                      <th className="px-5 py-3.5 font-medium">Email</th>
+                      <th className="px-5 py-3.5 font-medium">Otoritas Peran</th>
+                      <th className="px-5 py-3.5 font-medium">Saldo SeaWallet</th>
+                      <th className="px-5 py-3.5 font-medium">Tanggal Gabung</th>
                     </tr>
                   </thead>
-                  <tbody className="divide-y divide-zinc-100 text-sm text-zinc-700">
+                  <tbody className="divide-y divide-line text-xs text-manifest-ink">
                     {filtered.length === 0 ? (
                       <tr>
-                        <td colSpan={5} className="px-6 py-12 text-center text-zinc-400 font-light">
-                          <Users className="mx-auto h-10 w-10 text-zinc-300 mb-3" />
-                          Tidak ada pengguna yang cocok.
+                        <td colSpan={5} className="px-5 py-12 text-center text-muted-foreground font-light">
+                          <Users className="mx-auto h-8 w-8 text-muted-foreground/30 mb-3 stroke-1" />
+                          Tidak ada data pengguna yang cocok.
                         </td>
                       </tr>
                     ) : filtered.map((u) => (
-                      <tr key={u.id} className="hover:bg-zinc-50/50 transition-colors">
-                        <td className="px-6 py-4 font-semibold text-zinc-900">{u.username}</td>
-                        <td className="px-6 py-4 text-zinc-500 font-light">{u.email}</td>
-                        <td className="px-6 py-4">
+                      <tr key={u.id} className="hover:bg-sea-foam/5 transition-colors">
+                        <td className="px-5 py-3.5 font-bold">{u.username}</td>
+                        <td className="px-5 py-3.5 font-light text-muted-foreground">{u.email}</td>
+                        <td className="px-5 py-3.5">
                           <div className="flex flex-wrap gap-1">
                             {u.roles.map((r: string) => (
-                              <span key={r} className={`inline-flex items-center rounded-md px-2 py-0.5 text-xs font-semibold ring-1 ring-inset ${ROLE_COLORS[r] || "bg-zinc-50 text-zinc-700 ring-zinc-200"}`}>
-                                {r}
-                              </span>
+                              <RoleBadge key={r} role={r as any} />
                             ))}
                           </div>
                         </td>
-                        <td className="px-6 py-4 font-bold text-zinc-900">
-                          Rp {u.walletBalance.toLocaleString("id-ID")}
+                        <td className="px-5 py-3.5">
+                          <Price amount={u.walletBalance} size="sm" className="font-bold text-manifest-ink" />
                         </td>
-                        <td className="px-6 py-4 text-zinc-400 font-light">
+                        <td className="px-5 py-3.5 font-mono text-[11px] text-muted-foreground tabular-nums">
                           {new Date(u.createdAt).toLocaleDateString("id-ID", { day: "2-digit", month: "short", year: "numeric" })}
                         </td>
                       </tr>

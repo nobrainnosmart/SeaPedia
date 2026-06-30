@@ -2,11 +2,12 @@
 
 import { useEffect, useState } from "react";
 import { toast } from "sonner";
-import { AlertCircle, Clock, Store, User, ShieldAlert } from "lucide-react";
-import { Card } from "@/components/ui/card";
+import { AlertCircle, Store, User, ShieldAlert } from "lucide-react";
 import ProtectedRoute from "@/components/auth/ProtectedRoute";
 import DashboardLayout from "@/components/layout/DashboardLayout";
 import api from "@/lib/api";
+import Price from "@/components/ui/Price";
+import StatusBadge from "@/components/ui/StatusBadge";
 
 export default function AdminOverdueOrdersPage() {
   const [orders, setOrders] = useState<any[]>([]);
@@ -57,7 +58,7 @@ export default function AdminOverdueOrdersPage() {
     }
 
     const lateMs = diffMs - limitMs;
-    if (lateMs <= 0) return "Tepat Waktu (Baru Saja Terlambat)";
+    if (lateMs <= 0) return "Baru Saja Terlambat";
 
     const lateHours = lateMs / (1000 * 60 * 60);
     if (lateHours < 24) {
@@ -71,70 +72,77 @@ export default function AdminOverdueOrdersPage() {
     <ProtectedRoute allowedRole="ADMIN">
       <DashboardLayout>
         {loading ? (
-          <div className="text-center py-12 text-zinc-500 animate-pulse">Memuat pesanan terlambat...</div>
+          <div className="flex items-center justify-center py-20">
+            <span className="text-xs text-muted-foreground animate-pulse font-mono">Menganalisis SLA Rute...</span>
+          </div>
         ) : (
-          <div className="space-y-6">
-            <div>
-              <h1 className="text-2xl font-bold text-zinc-950">Pesanan Terlambat (SLA Breached)</h1>
-              <p className="text-zinc-500 text-sm font-light mt-0.5">Daftar pesanan aktif yang telah melebihi batas waktu SLA pengantaran berdasarkan simulasi waktu.</p>
+          <div className="space-y-6 text-manifest-ink">
+            {/* Header */}
+            <div className="border-b border-line pb-4">
+              <span className="text-xs uppercase tracking-wider font-semibold text-tide-coral">Pengawasan SLA</span>
+              <h1 className="text-2xl font-bold font-display mt-0.5">Pesanan Terlambat (SLA Breached)</h1>
+              <p className="text-muted-foreground text-xs font-light mt-0.5">Daftar pesanan aktif yang telah melebihi batas waktu SLA pengantaran berdasarkan simulasi waktu.</p>
             </div>
 
             {orders.length === 0 ? (
-              <div className="text-center py-20 bg-white border border-zinc-200 rounded-3xl">
-                <ShieldAlert className="mx-auto h-12 w-12 text-zinc-300 mb-4" />
-                <p className="text-zinc-400 font-light">Hebat! Tidak ada pesanan yang terlambat saat ini.</p>
+              <div className="text-center py-20 bg-white border border-line rounded-default shadow-card flex flex-col items-center">
+                <div className="p-4 rounded-full bg-role-seller/10 text-role-seller mb-4 border border-role-seller/10">
+                  <ShieldAlert className="h-8 w-8 stroke-1" />
+                </div>
+                <h2 className="text-base font-bold font-display">Operasional Lancar</h2>
+                <p className="text-muted-foreground text-xs font-light mt-1">Luar biasa! Tidak ada rute pengiriman yang terlambat saat ini.</p>
               </div>
             ) : (
-              <div className="bg-white border border-zinc-200 rounded-3xl overflow-hidden shadow-sm">
+              <div className="bg-white border border-line rounded-default overflow-hidden shadow-card">
                 <div className="overflow-x-auto">
                   <table className="w-full text-left border-collapse">
                     <thead>
-                      <tr className="border-b border-zinc-200 bg-zinc-50/70 text-xs font-semibold text-zinc-500 uppercase tracking-wider">
-                        <th className="px-6 py-4">ID Pesanan</th>
-                        <th className="px-6 py-4">Pihak Terlibat</th>
-                        <th className="px-6 py-4">Metode & SLA</th>
-                        <th className="px-6 py-4">Status / Kurir</th>
-                        <th className="px-6 py-4">Keterlambatan</th>
-                        <th className="px-6 py-4">Tanggal Dibuat</th>
+                      <tr className="border-b border-line bg-sea-foam/15 text-[10px] font-semibold text-muted-foreground uppercase tracking-wider">
+                        <th className="px-5 py-3.5 font-medium">ID Pesanan</th>
+                        <th className="px-5 py-3.5 font-medium">Mitra & Pembeli</th>
+                        <th className="px-5 py-3.5 font-medium">Metode SLA</th>
+                        <th className="px-5 py-3.5 font-medium">Kurir / Status</th>
+                        <th className="px-5 py-3.5 font-medium text-tide-coral">Keterlambatan</th>
+                        <th className="px-5 py-3.5 font-medium">Waktu Transaksi</th>
                       </tr>
                     </thead>
-                    <tbody className="divide-y divide-zinc-150 text-sm text-zinc-700">
+                    <tbody className="divide-y divide-line text-xs text-manifest-ink">
                       {orders.map((o) => (
-                        <tr key={o.id} className="hover:bg-zinc-50/50 transition-colors">
-                          <td className="px-6 py-4 font-mono font-bold text-zinc-900">#{o.id.slice(-8).toUpperCase()}</td>
-                          <td className="px-6 py-4">
-                            <div className="space-y-0.5">
-                              <p className="font-semibold text-zinc-800 flex items-center gap-1">
-                                <User className="h-3.5 w-3.5 text-zinc-400" />
-                                {o.buyer?.username}
-                              </p>
-                              <p className="text-xs text-zinc-500 flex items-center gap-1 font-light">
-                                <Store className="h-3.5 w-3.5 text-zinc-400" />
+                        <tr key={o.id} className="hover:bg-sea-foam/5 transition-colors">
+                          <td className="px-5 py-3.5 font-mono font-bold">#{o.id.slice(-8).toUpperCase()}</td>
+                          <td className="px-5 py-3.5">
+                            <div className="space-y-1">
+                              <p className="font-bold flex items-center gap-1">
+                                <Store className="h-3.5 w-3.5 text-muted-foreground shrink-0" />
                                 {o.store?.name}
                               </p>
-                            </div>
-                          </td>
-                          <td className="px-6 py-4">
-                            <div className="space-y-0.5">
-                              <p className="font-medium text-zinc-800">{o.deliveryMethod}</p>
-                              <p className="text-xs text-zinc-500 font-light">SLA: {getSlaLabel(o.deliveryMethod)}</p>
-                            </div>
-                          </td>
-                          <td className="px-6 py-4">
-                            <div className="space-y-1">
-                              <span className="inline-flex items-center rounded-md bg-amber-50 px-2 py-0.5 text-xs font-semibold text-amber-700 ring-1 ring-inset ring-amber-600/20">
-                                {o.status.replace("_", " ")}
-                              </span>
-                              <p className="text-xs text-zinc-500 font-light">
-                                Kurir: {o.driver?.username || <span className="italic">Belum ada</span>}
+                              <p className="text-[10px] text-muted-foreground flex items-center gap-1 font-light">
+                                <User className="h-3.5 w-3.5 text-muted-foreground/50 shrink-0" />
+                                Pembeli: {o.buyer?.username}
                               </p>
                             </div>
                           </td>
-                          <td className="px-6 py-4 font-bold text-red-600 flex items-center gap-1.5 py-6">
-                            <AlertCircle className="h-4 w-4 shrink-0" />
-                            {calculateLateTime(o.createdAt)}
+                          <td className="px-5 py-3.5">
+                            <div className="space-y-0.5">
+                              <p className="font-semibold text-manifest-ink">{o.deliveryMethod}</p>
+                              <p className="text-[10px] text-muted-foreground font-light">Batas: {getSlaLabel(o.deliveryMethod)}</p>
+                            </div>
                           </td>
-                          <td className="px-6 py-4 font-light text-zinc-500">
+                          <td className="px-5 py-3.5">
+                            <div className="space-y-1.5">
+                              <StatusBadge status={o.status} />
+                              <p className="text-[10px] text-muted-foreground font-light">
+                                Kurir: {o.driver?.username || <span className="italic text-cargo-amber font-semibold">Mencari...</span>}
+                              </p>
+                            </div>
+                          </td>
+                          <td className="px-5 py-3.5 font-bold text-tide-coral">
+                            <div className="flex items-center gap-1">
+                              <AlertCircle className="h-3.5 w-3.5 shrink-0" />
+                              <span className="font-mono text-[11px] font-bold tracking-wide">{calculateLateTime(o.createdAt)}</span>
+                            </div>
+                          </td>
+                          <td className="px-5 py-3.5 font-mono text-[11px] text-muted-foreground tabular-nums">
                             {new Date(o.createdAt).toLocaleString("id-ID")}
                           </td>
                         </tr>
